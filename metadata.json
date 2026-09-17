@@ -1,0 +1,6 @@
+{
+  "name": "ANTEN Business Manager",
+  "description": "Sistem manajemen bisnis, penjualan sales, fee komisi marketing, customer, billing, quotation, dan invoice ISP (Versi 1.0.0).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
