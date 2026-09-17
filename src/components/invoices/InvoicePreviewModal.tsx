@@ -245,13 +245,13 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           </div>
 
           {/* Payment Log History */}
-          {invoice.paymentHistory && invoice.paymentHistory.length > 0 && (
+          {invoice.payments && invoice.payments.length > 0 && (
             <div className="mt-6 pt-4 border-t border-slate-200">
               <h5 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                 Histori Penerimaan Pembayaran
               </h5>
               <div className="space-y-1.5">
-                {invoice.paymentHistory.map((p) => (
+                {invoice.payments.map((p) => (
                   <div
                     key={p.id}
                     className="p-2.5 bg-emerald-50/60 rounded-lg border border-emerald-100 flex items-center justify-between text-xs"
@@ -260,7 +260,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <div>
                         <span className="font-bold text-slate-900">{formatRupiah(p.amount)}</span>
-                        <span className="text-slate-500 ml-2">via {p.method}</span>
+                        <span className="text-slate-500 ml-2">via {p.paymentMethod}</span>
                         {p.notes && <span className="text-slate-400 ml-2 italic">({p.notes})</span>}
                       </div>
                     </div>

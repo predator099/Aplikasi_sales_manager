@@ -86,7 +86,7 @@ interface AppContextType {
 
   createQuotation: (quotation: Omit<Quotation, 'id' | 'createdAt'>) => string;
   updateQuotationStatus: (id: string, status: QuotationStatus) => void;
-  convertQuotationToInvoice: (quotationId: string, dueDate: string) => string;
+  convertQuotationToInvoice: (quotationId: string, dueDate?: string) => string;
 
   recordPayment: (invoiceId: string, payment: Omit<PaymentRecord, 'id' | 'createdAt'>) => void;
   updateInvoiceStatus: (id: string, status: InvoicePaymentStatus) => void;
@@ -258,9 +258,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const found = users.find((u) => u.role === role) || {
       id: `USR-${role}`,
       name: `${role} User`,
-      email: `${role.toLowerCase()}@anten.net.id`,
+      username: `${role.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+      email: `${role.toLowerCase().replace(/[^a-z0-9]/g, '')}@anten.net.id`,
       role,
-      status: 'Aktif',
+      status: 'Aktif' as const,
     };
     setCurrentUser(found);
     setIsAuthenticated(true);
@@ -551,7 +552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addToast('info', `Status penawaran ${id} menjadi ${status}`);
   };
 
-  const convertQuotationToInvoice = (quotationId: string, dueDate: string): string => {
+  const convertQuotationToInvoice = (quotationId: string, dueDate?: string): string => {
     const quote = quotations.find((q) => q.id === quotationId);
     if (!quote) throw new Error('Quotation not found');
 

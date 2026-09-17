@@ -24,7 +24,7 @@ export const UsersManagementView: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('Sales');
-  const [status, setStatus] = useState<'Aktif' | 'Tidak Aktif'>('Aktif');
+  const [status, setStatus] = useState<'Aktif' | 'Tidak Aktif' | 'Nonaktif'>('Aktif');
   const [password, setPassword] = useState('');
 
   const [userToDelete, setUserToDelete] = useState<User | null>(null);

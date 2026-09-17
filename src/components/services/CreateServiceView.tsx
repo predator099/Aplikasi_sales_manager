@@ -380,7 +380,7 @@ export const CreateServiceView: React.FC = () => {
                       <span>Belum ada paket internet aktif yang dibuat.</span>
                       <button
                         type="button"
-                        onClick={() => setActiveMenu('pricing')}
+                        onClick={() => setActiveMenu('master-pricing')}
                         className="text-xs font-bold text-amber-900 underline hover:no-underline cursor-pointer"
                       >
                         Kelola Paket Internet &rarr;
@@ -443,7 +443,7 @@ export const CreateServiceView: React.FC = () => {
                   >
                     {publicIps.map((ip) => (
                       <option key={ip.id} value={ip.id}>
-                        {ip.prefix} ({ip.usableIps} Usable IPs) — {formatRupiah(ip.costPerMonth)}/bln
+                        {ip.prefix} — {formatRupiah(ip.price)}/bln
                       </option>
                     ))}
                   </select>
@@ -675,7 +675,7 @@ export const CreateServiceView: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">PIC / Kontak:</span>
-                        <span className="font-medium text-slate-800">{selectedCustomer?.fullName} ({selectedCustomer?.phone})</span>
+                        <span className="font-medium text-slate-800">{selectedCustomer?.fullName} ({selectedCustomer?.whatsapp})</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">Bandwidth Dedicated:</span>

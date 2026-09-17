@@ -170,6 +170,7 @@ export type UserRole =
   | 'Super Admin'
   | 'Finance'
   | 'Sales'
+  | 'AM'
   | 'NOC / Teknis'
   | 'Administrator'
   | 'Accounting'

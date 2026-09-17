@@ -46,7 +46,13 @@ export const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({
       return;
     }
 
-    recordPayment(invoice.id, amountNum, paymentMethod, notes);
+    recordPayment(invoice.id, {
+      amount: amountNum,
+      date: new Date().toISOString().slice(0, 10),
+      paymentMethod,
+      referenceNumber: notes || `TRX-${Date.now().toString().slice(-6)}`,
+      notes: notes || undefined,
+    });
     onClose();
   };
 
