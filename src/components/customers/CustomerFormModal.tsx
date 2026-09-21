@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Customer, CustomerStatus, DocumentAttachment } from '../../types';
 import { DocumentUploader } from './DocumentUploader';
+import { useApp } from '../../context/AppContext';
 import {
   X,
   Building2,
@@ -29,6 +30,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { currentUser } = useApp();
+
   // Company & Identity
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -106,7 +109,11 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       setStatus('Aktif');
       setNotes('');
 
-      setSalesName('');
+      setSalesName(
+        currentUser.role === 'Sales' || currentUser.role === 'AM'
+          ? currentUser.name
+          : ''
+      );
       setSalesPhone('');
       setPicTechnicalPhone('');
       setPicFinanceName('');
