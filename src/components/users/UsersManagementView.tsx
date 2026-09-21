@@ -250,11 +250,16 @@ export const UsersManagementView: React.FC = () => {
                   onChange={(e) => setRole(e.target.value as UserRole)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-900 font-medium"
                 >
+                  <option value="Administrator">Administrator (Semua Menu & Konfigurasi)</option>
+                  <option value="Marketing">Marketing (Dashboard, Pelanggan, Penawaran, Komisi, Katalog & Rumus)</option>
+                  <option value="Sales">Sales (Dashboard, Pelanggan, Penawaran, Buat Layanan, Komisi & Katalog)</option>
+                  <option value="Finance">Finance (Faktur, Komisi & Keuangan)</option>
+                  <option value="NOC / Teknis">NOC / Teknis (IP Publik & Metro)</option>
                   <option value="Super Admin">Super Admin</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Sales">Sales</option>
-                  <option value="NOC / Teknis">NOC / Teknis</option>
                 </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Sidebar dan akses menu aplikasi akan otomatis disesuaikan dengan peran yang dipilih.
+                </p>
               </div>
 
               <div>

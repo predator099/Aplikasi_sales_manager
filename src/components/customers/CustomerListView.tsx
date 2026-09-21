@@ -162,9 +162,6 @@ export const CustomerListView: React.FC = () => {
               {customers.length} Terdaftar
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manajemen lengkap akun pelanggan, PIC operasional, PIC keuangan, Sales representatif, kontrak berlangganan, dan dokumen legal NPWP/NIB
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

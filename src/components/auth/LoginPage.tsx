@@ -147,8 +147,8 @@ export const LoginPage: React.FC = () => {
             <p className="text-[11px] font-semibold text-slate-500 mb-2 text-center uppercase tracking-wider">
               Akses Cepat Demo:
             </p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {users.slice(0, 4).map((u) => {
+            <div className="grid grid-cols-3 gap-1.5">
+              {users.slice(0, 3).map((u) => {
                 const pass = u.password || 'admin123';
                 const isSelected = identifier === u.username;
                 return (
@@ -156,14 +156,14 @@ export const LoginPage: React.FC = () => {
                     key={u.id}
                     type="button"
                     onClick={() => handleSelectDemo(u.username, pass)}
-                    className={`px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors border cursor-pointer ${
+                    className={`px-2 py-1.5 rounded-lg text-left text-xs transition-colors border cursor-pointer ${
                       isSelected
                         ? 'bg-teal-50 border-teal-300 text-teal-900 font-semibold'
                         : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <div className="truncate font-medium">{u.role}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">@{u.username}</div>
+                    <div className="truncate font-semibold text-[11px]">{u.role}</div>
+                    <div className="text-[10px] text-slate-400 font-mono truncate">@{u.username}</div>
                   </button>
                 );
               })}

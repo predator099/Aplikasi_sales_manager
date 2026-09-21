@@ -202,9 +202,6 @@ export const FormulaSettingsView: React.FC = () => {
               Konfigurasi Sistem
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Formula perhitungan tarif metro ethernet dan rasio alokasi margin sales
-          </p>
         </div>
 
         {/* Global Action Buttons */}

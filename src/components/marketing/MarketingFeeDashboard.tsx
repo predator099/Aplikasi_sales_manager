@@ -168,7 +168,10 @@ export const MarketingFeeDashboard: React.FC = () => {
   };
 
   const isFinanceOrAdmin =
-    currentUser.role === 'Super Admin' || currentUser.role === 'Finance';
+    currentUser.role === 'Administrator' ||
+    currentUser.role === 'Super Admin' ||
+    currentUser.role === 'Finance' ||
+    currentUser.role === 'Marketing';
 
   // Filtered withdrawals
   const filteredWithdrawals = withdrawals.filter((w) => {
@@ -188,9 +191,6 @@ export const MarketingFeeDashboard: React.FC = () => {
           <h1 className="text-lg font-semibold text-slate-900 tracking-tight">
             Fee & Komisi Sales
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Alokasi fee marketing pool, komisi closing sales, dan pencairan komisi
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

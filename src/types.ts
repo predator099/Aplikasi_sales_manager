@@ -225,12 +225,13 @@ export interface Invoice {
 }
 
 export type UserRole =
+  | 'Administrator'
+  | 'Marketing'
+  | 'Sales'
   | 'Super Admin'
   | 'Finance'
-  | 'Sales'
   | 'AM'
   | 'NOC / Teknis'
-  | 'Administrator'
   | 'Accounting'
   | 'Manager';
 

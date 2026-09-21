@@ -77,9 +77,6 @@ export const DashboardView: React.FC = () => {
           <h1 className="text-lg font-semibold text-slate-900 tracking-tight">
             Dashboard
           </h1>
-          <p className="text-xs text-slate-500">
-            Ringkasan performa layanan, pelanggan, dan transaksi aktif
-          </p>
         </div>
 
         <button

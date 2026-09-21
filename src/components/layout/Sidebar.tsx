@@ -40,7 +40,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setMobileOpen(false);
   };
 
-  const navGroups = [
+  // Filter menu berdasarkan peran pengguna (Administrator, Marketing, Sales)
+  const isAllowedMenu = (menuId: ActiveMenu): boolean => {
+    const role = currentUser.role;
+
+    // Administrator memiliki akses ke seluruh menu
+    if (role === 'Administrator' || role === 'Super Admin') {
+      return true;
+    }
+
+    // Role Marketing: Dashboard, Database Pelanggan, Penawaran, Komisi Marketing, Katalog Layanan (Paket Internet, Metro, IP Publik), Rumus Tarif
+    if (role === 'Marketing') {
+      return [
+        'dashboard',
+        'customers',
+        'quotations',
+        'marketing-fee',
+        'master-pricing',
+        'metro',
+        'public-ip',
+        'formula-settings',
+      ].includes(menuId);
+    }
+
+    // Role Sales: Dashboard, Database Pelanggan, Penawaran, Buat Layanan, Komisi Marketing, Katalog Layanan (Paket Internet, Metro, IP Publik)
+    if (role === 'Sales' || role === 'AM') {
+      return [
+        'dashboard',
+        'customers',
+        'quotations',
+        'create-service',
+        'marketing-fee',
+        'master-pricing',
+        'metro',
+        'public-ip',
+      ].includes(menuId);
+    }
+
+    // Default fallback untuk role lain (Finance, NOC, dll)
+    if (role === 'Finance' || role === 'Accounting') {
+      return [
+        'dashboard',
+        'customers',
+        'invoices',
+        'marketing-fee',
+        'master-pricing',
+        'metro',
+        'audit-log',
+      ].includes(menuId);
+    }
+
+    if (role === 'NOC / Teknis') {
+      return [
+        'dashboard',
+        'customers',
+        'public-ip',
+        'metro',
+        'audit-log',
+      ].includes(menuId);
+    }
+
+    return true;
+  };
+
+  const rawNavGroups = [
     {
       title: 'Utama',
       items: [
@@ -117,6 +180,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
   ];
+
+  const navGroups = rawNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => isAllowedMenu(item.id)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <>

@@ -14,7 +14,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onToggleMobileMenu, collapsed }) => {
-  const { currentUser, logout, activeMenu } = useApp();
+  const { currentUser, logout, activeMenu, switchUserRole } = useApp();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +169,35 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobileMenu, collapsed })
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     Aktif
                   </span>
+                </div>
+
+                {/* Quick Role Switcher */}
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Ganti Peran Cepat:
+                  </span>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(['Administrator', 'Marketing', 'Sales'] as const).map((r) => {
+                      const isActive = currentUser.role === r;
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => {
+                            switchUserRole(r);
+                            setUserDropdownOpen(false);
+                          }}
+                          className={`px-1.5 py-1 text-[10px] rounded font-medium border text-center transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-teal-50 border-teal-300 text-teal-800 font-bold'
+                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          {r}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100">
