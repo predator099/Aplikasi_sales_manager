@@ -38,6 +38,7 @@ export const CreateServiceView: React.FC = () => {
     services,
     updateServiceStatus,
     setActiveMenu,
+    formulaConfig,
   } = useApp();
 
   // Navigation tabs: 'create' | 'list'
@@ -114,6 +115,7 @@ export const CreateServiceView: React.FC = () => {
       publicIp: selectedPublicIp,
       discountType,
       discountValue,
+      formula: formulaConfig,
     });
   }, [
     bandwidthMbps,
@@ -122,13 +124,14 @@ export const CreateServiceView: React.FC = () => {
     selectedPublicIp,
     discountType,
     discountValue,
+    formulaConfig,
   ]);
 
   // Pricing Allocation State (Hierarchical Fixed Formula)
   const [pricingAllocation, setPricingAllocation] = useState<PricingAllocation>(() => {
     const selling = calculation.dpp > 0 ? calculation.dpp : 3500000;
     const bottom = Math.round(selling * 0.85);
-    return calculateMarginAllocation(bottom, selling);
+    return calculateMarginAllocation(bottom, selling, formulaConfig);
   });
 
   // Keep selling price synced when Step 1 calculation updates
@@ -140,10 +143,10 @@ export const CreateServiceView: React.FC = () => {
           newSelling,
           prev.bottomPrice > 0 ? prev.bottomPrice : Math.round(newSelling * 0.85)
         );
-        return calculateMarginAllocation(newBottom, newSelling);
+        return calculateMarginAllocation(newBottom, newSelling, formulaConfig);
       });
     }
-  }, [calculation.dpp]);
+  }, [calculation.dpp, formulaConfig]);
 
   const handleSave = (createQuotationAlso = false) => {
     if (!selectedCustomerId) {

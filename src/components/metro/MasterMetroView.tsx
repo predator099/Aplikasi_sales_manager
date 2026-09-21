@@ -226,18 +226,15 @@ export const MasterMetroView: React.FC = () => {
       </div>
 
       {/* Main Section: Master Table of Metro */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
-          <div>
-            <div className="flex items-center gap-2">
-              <Network className="w-4 h-4 text-slate-700" />
-              <h2 className="text-sm font-bold text-slate-900">
-                Daftar Kecepatan & Tarif Metro
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Tarif link metro kustom yang siap ditarik saat membuat penawaran & layanan pelanggan.
-            </p>
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="p-3.5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Daftar Layanan Metro
+            </h2>
+            <span className="text-[10px] text-slate-400 font-mono">
+              ({filteredMetro.length} rute)
+            </span>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -270,7 +267,7 @@ export const MasterMetroView: React.FC = () => {
                 <th className="py-2.5 px-4 w-12 text-center">No</th>
                 <th className="py-2.5 px-4">Provider / Rute Metro</th>
                 <th className="py-2.5 px-4">Kecepatan</th>
-                <th className="py-2.5 px-4">Harga Metro (DPP)</th>
+                <th className="py-2.5 px-4">Harga DPP</th>
                 <th className="py-2.5 px-4 text-center">Status</th>
                 <th className="py-2.5 px-4 text-right">Aksi</th>
               </tr>

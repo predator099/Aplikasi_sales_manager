@@ -167,18 +167,15 @@ export const MasterPricingView: React.FC = () => {
       </div>
 
       {/* Main Section: Master Table of Bandwidth Tiers */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
-          <div>
-            <div className="flex items-center gap-2">
-              <Tags className="w-4 h-4 text-slate-700" />
-              <h2 className="text-sm font-bold text-slate-900">
-                Daftar Kecepatan & Tarif Internet
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Tarif bandwidth internet dedicated yang otomatis ditarik saat membuat penawaran & layanan.
-            </p>
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="p-3.5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Daftar Paket & Tarif
+            </h2>
+            <span className="text-[10px] text-slate-400 font-mono">
+              ({filteredTiers.length} tier)
+            </span>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -209,11 +206,10 @@ export const MasterPricingView: React.FC = () => {
             <thead>
               <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
                 <th className="py-2.5 px-4">Kapasitas</th>
-                <th className="py-2.5 px-4">Nama Paket & Keterangan</th>
-                <th className="py-2.5 px-4">Harga Internet (DPP)</th>
+                <th className="py-2.5 px-4">Nama Paket</th>
+                <th className="py-2.5 px-4">Harga (DPP)</th>
                 <th className="py-2.5 px-4">Efektif / Mbps</th>
-                <th className="py-2.5 px-4">PPN ({pricingConfig.ppnPercentage}%)</th>
-                <th className="py-2.5 px-4">Total / Bulan (Gross)</th>
+                <th className="py-2.5 px-4">Total + PPN</th>
                 <th className="py-2.5 px-4 text-center">Status</th>
                 <th className="py-2.5 px-4 text-right">Aksi</th>
               </tr>
@@ -221,7 +217,7 @@ export const MasterPricingView: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredTiers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-slate-400">
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
                     <Info className="w-7 h-7 mx-auto mb-1.5 opacity-50 text-slate-400" />
                     <p className="text-xs font-medium">Tidak ada tarif kapasitas bandwidth ditemukan.</p>
                   </td>
@@ -231,7 +227,6 @@ export const MasterPricingView: React.FC = () => {
                   const ppn = Math.round(tier.price * (pricingConfig.ppnPercentage / 100));
                   const totalGross = tier.price + ppn;
                   const pricePerMbps = Math.round(tier.price / tier.bandwidthMbps);
-                  const isGigabit = tier.bandwidthMbps >= 1000;
 
                   return (
                     <tr
@@ -241,63 +236,47 @@ export const MasterPricingView: React.FC = () => {
                       }`}
                     >
                       {/* Kapasitas */}
-                      <td className="py-3.5 px-4 font-mono">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${
-                            isGigabit
-                              ? 'bg-amber-50 text-amber-800 border-amber-200'
-                              : 'bg-teal-50 text-teal-800 border-teal-200'
-                          }`}
-                        >
-                          {formatBandwidth(tier.bandwidthMbps)}
-                        </span>
+                      <td className="py-3 px-4 font-mono font-semibold text-slate-900">
+                        {formatBandwidth(tier.bandwidthMbps)}
                       </td>
 
-                      {/* Nama & Catatan */}
-                      <td className="py-3.5 px-4">
-                        <p className="font-bold text-slate-900 text-xs">{tier.name}</p>
-                        {tier.notes ? (
-                          <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{tier.notes}</p>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">-</span>
+                      {/* Nama */}
+                      <td className="py-3 px-4">
+                        <span className="font-semibold text-slate-800 text-xs">{tier.name}</span>
+                        {tier.notes && (
+                          <span className="text-[11px] text-slate-400 block">{tier.notes}</span>
                         )}
                       </td>
 
                       {/* Harga DPP */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-xs">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 text-xs">
                         {formatRupiah(tier.price)}
                       </td>
 
                       {/* Efektif per Mbps */}
-                      <td className="py-3.5 px-4 font-mono text-slate-600 text-[11px]">
+                      <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
                         Rp {pricePerMbps.toLocaleString('id-ID')}
-                        <span className="text-slate-400 text-[10px]"> /Mbps</span>
-                      </td>
-
-                      {/* PPN */}
-                      <td className="py-3.5 px-4 font-mono text-slate-500 text-[11px]">
-                        {formatRupiah(ppn)}
                       </td>
 
                       {/* Total Gross */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-teal-800 text-xs">
+                      <td className="py-3 px-4 font-mono font-semibold text-teal-800 text-xs">
                         {formatRupiah(totalGross)}
                       </td>
 
                       {/* Status Toggle */}
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3 px-4 text-center">
                         <button
                           type="button"
                           onClick={() => toggleBandwidthTier(tier.id)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${
                             tier.isActive
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              tier.isActive ? 'bg-emerald-600' : 'bg-slate-500'
+                              tier.isActive ? 'bg-emerald-600' : 'bg-slate-400'
                             }`}
                           />
                           {tier.isActive ? 'Aktif' : 'Nonaktif'}
@@ -305,12 +284,12 @@ export const MasterPricingView: React.FC = () => {
                       </td>
 
                       {/* Aksi */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(tier)}
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-teal-700 hover:bg-teal-50 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                             title="Edit Tarif Kapasitas"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

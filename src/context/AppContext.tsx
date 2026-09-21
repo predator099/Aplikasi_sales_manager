@@ -4,6 +4,7 @@ import {
   Metro,
   PublicIp,
   PricingConfig,
+  CalculationFormulaConfig,
   BandwidthTier,
   ServiceItem,
   Quotation,
@@ -23,6 +24,7 @@ import {
   INITIAL_METRO,
   INITIAL_PUBLIC_IPS,
   INITIAL_PRICING,
+  DEFAULT_FORMULA_CONFIG,
   INITIAL_SERVICES,
   INITIAL_QUOTATIONS,
   INITIAL_INVOICES,
@@ -53,6 +55,7 @@ interface AppContextType {
   metro: Metro[];
   publicIps: PublicIp[];
   pricingConfig: PricingConfig;
+  formulaConfig: CalculationFormulaConfig;
   services: ServiceItem[];
   quotations: Quotation[];
   invoices: Invoice[];
@@ -69,6 +72,9 @@ interface AppContextType {
   saveBandwidthTier: (tier: BandwidthTier) => void;
   deleteBandwidthTier: (tierId: string) => void;
   toggleBandwidthTier: (tierId: string) => void;
+
+  updateFormulaConfig: (config: Partial<CalculationFormulaConfig>) => void;
+  resetFormulaConfigToDefault: () => void;
 
   addMetro: (metro: Omit<Metro, 'id'>) => void;
   updateMetro: (id: string, metro: Partial<Metro>) => void;
@@ -124,9 +130,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeMenu, setActiveMenu] = useState<ActiveMenu>('dashboard');
   const [selectedCustomerIdForDetail, setSelectedCustomerIdForDetail] = useState<string | null>(null);
 
-  const [customers, setCustomers] = useState<Customer[]>(() =>
-    loadStored('customers', INITIAL_CUSTOMERS)
-  );
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    const loaded = loadStored<Customer[]>('customers', INITIAL_CUSTOMERS);
+    // Merge with INITIAL_CUSTOMERS to ensure new fields are populated if stored before
+    return loaded.map((c) => {
+      const matchInitial = INITIAL_CUSTOMERS.find((init) => init.id === c.id);
+      return {
+        ...matchInitial,
+        ...c,
+        salesName: c.salesName || matchInitial?.salesName || 'Rian Pratama',
+        salesPhone: c.salesPhone || matchInitial?.salesPhone || '081298765432',
+        picTechnicalPhone: c.picTechnicalPhone || matchInitial?.picTechnicalPhone || '081211223344',
+        picFinanceName: c.picFinanceName || matchInitial?.picFinanceName || 'Ratna Wulandari',
+        picFinancePhone: c.picFinancePhone || matchInitial?.picFinancePhone || '081255667788',
+        subscriptionPeriod: c.subscriptionPeriod || matchInitial?.subscriptionPeriod || '12 Bulan (1 Tahun)',
+        responsiblePerson: c.responsiblePerson || matchInitial?.responsiblePerson || c.fullName,
+        responsiblePersonPhone: c.responsiblePersonPhone || matchInitial?.responsiblePersonPhone || c.whatsapp,
+        npwpDocument: c.npwpDocument !== undefined ? c.npwpDocument : (matchInitial?.npwpDocument || null),
+        nibDocument: c.nibDocument !== undefined ? c.nibDocument : (matchInitial?.nibDocument || null),
+      };
+    });
+  });
   const [metro, setMetro] = useState<Metro[]>(() =>
     loadStored('metro', INITIAL_METRO)
   );
@@ -143,6 +167,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return loaded;
   });
+  const [formulaConfig, setFormulaConfig] = useState<CalculationFormulaConfig>(() =>
+    loadStored('formulaConfig', DEFAULT_FORMULA_CONFIG)
+  );
   const [services, setServices] = useState<ServiceItem[]>(() =>
     loadStored('services', INITIAL_SERVICES)
   );
@@ -191,6 +218,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_pricingConfig`, JSON.stringify(pricingConfig));
   }, [pricingConfig]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_formulaConfig`, JSON.stringify(formulaConfig));
+  }, [formulaConfig]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_services`, JSON.stringify(services));
@@ -416,6 +447,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         t.id === tierId ? { ...t, isActive: !t.isActive } : t
       ),
     }));
+  };
+
+  // Formula Calculation Config Actions (Admin level)
+  const updateFormulaConfig = (config: Partial<CalculationFormulaConfig>) => {
+    setFormulaConfig((prev) => {
+      const updated: CalculationFormulaConfig = {
+        ...prev,
+        ...config,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name || 'Administrator',
+      };
+      return updated;
+    });
+    logAudit(
+      'Updated Formula Config',
+      'Pricing',
+      'CALC-FORMULA',
+      `Administrator ${currentUser.name} memperbarui rumus Internet Metro & Fee Sales (Kantor: ${config.kantorPercentage ?? formulaConfig.kantorPercentage}%, Pool: ${config.marketingPoolPercentage ?? formulaConfig.marketingPoolPercentage}%, Sales: ${config.salesPercentageOfPool ?? formulaConfig.salesPercentageOfPool}%, Metro: ${config.metroCalculationMethod ?? formulaConfig.metroCalculationMethod})`
+    );
+    addToast('success', 'Rumus perhitungan Internet Metro dan Fee Sales berhasil diperbarui.');
+  };
+
+  const resetFormulaConfigToDefault = () => {
+    setFormulaConfig({
+      ...DEFAULT_FORMULA_CONFIG,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser.name || 'Administrator',
+    });
+    logAudit(
+      'Reset Formula Config',
+      'Pricing',
+      'CALC-FORMULA',
+      `Administrator ${currentUser.name} mengembalikan seluruh rumus perhitungan ke standar default ISP`
+    );
+    addToast('info', 'Rumus perhitungan telah dikembalikan ke standar default.');
   };
 
   // Metro Actions
@@ -750,6 +816,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMetro(INITIAL_METRO);
     setPublicIps(INITIAL_PUBLIC_IPS);
     setPricingConfig(INITIAL_PRICING);
+    setFormulaConfig(DEFAULT_FORMULA_CONFIG);
     setServices(INITIAL_SERVICES);
     setQuotations(INITIAL_QUOTATIONS);
     setInvoices(INITIAL_INVOICES);
@@ -776,6 +843,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         metro,
         publicIps,
         pricingConfig,
+        formulaConfig,
         services,
         quotations,
         invoices,
@@ -792,6 +860,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         saveBandwidthTier,
         deleteBandwidthTier,
         toggleBandwidthTier,
+        updateFormulaConfig,
+        resetFormulaConfigToDefault,
         addMetro,
         updateMetro,
         deleteMetro,

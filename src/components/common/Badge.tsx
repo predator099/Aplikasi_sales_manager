@@ -13,23 +13,23 @@ interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ variant, children, size = 'md' }) => {
-  const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs';
+  const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-xs';
 
   const variantClasses = {
-    success: 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium',
-    warning: 'bg-amber-50 text-amber-700 border border-amber-200 font-medium',
-    danger: 'bg-rose-50 text-rose-700 border border-rose-200 font-medium',
-    info: 'bg-sky-50 text-sky-700 border border-sky-200 font-medium',
+    success: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-medium',
+    warning: 'bg-amber-50 text-amber-700 border border-amber-200/80 font-medium',
+    danger: 'bg-rose-50 text-rose-700 border border-rose-200/80 font-medium',
+    info: 'bg-sky-50 text-sky-700 border border-sky-200/80 font-medium',
     neutral: 'bg-slate-100 text-slate-700 border border-slate-200 font-medium',
     primary: 'bg-teal-50 text-teal-800 border border-teal-200 font-medium',
   }[variant];
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full whitespace-nowrap ${sizeClasses} ${variantClasses}`}
+      className={`inline-flex items-center gap-1.5 rounded-md whitespace-nowrap tracking-normal transition-colors ${sizeClasses} ${variantClasses}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
-      {children}
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-75 shrink-0" />
+      <span>{children}</span>
     </span>
   );
 };
@@ -69,13 +69,13 @@ export const QuotationStatusBadge: React.FC<{ status: string }> = ({ status }) =
 export const InvoiceStatusBadge: React.FC<{ status: string }> = ({ status }) => {
   switch (status) {
     case 'Paid':
-      return <Badge variant="success">Lunas (Paid)</Badge>;
+      return <Badge variant="success">Lunas</Badge>;
     case 'Partially Paid':
-      return <Badge variant="warning">Sebagian (Partially)</Badge>;
+      return <Badge variant="warning">Sebagian</Badge>;
     case 'Unpaid':
-      return <Badge variant="danger">Belum Bayar (Unpaid)</Badge>;
+      return <Badge variant="danger">Belum Bayar</Badge>;
     case 'Overdue':
-      return <Badge variant="danger">Jatuh Tempo (Overdue)</Badge>;
+      return <Badge variant="danger">Jatuh Tempo</Badge>;
     case 'Draft':
       return <Badge variant="neutral">Draft</Badge>;
     case 'Cancelled':
@@ -98,9 +98,8 @@ export const UserRoleBadge: React.FC<{ role: string }> = ({ role }) => {
       return <Badge variant="info">{role}</Badge>;
     case 'NOC / Teknis':
     case 'NOC/Teknis':
-      return <Badge variant="warning">{role}</Badge>;
+      return <Badge variant="neutral">{role}</Badge>;
     default:
       return <Badge variant="neutral">{role}</Badge>;
   }
 };
-

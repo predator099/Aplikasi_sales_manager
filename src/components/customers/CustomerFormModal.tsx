@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Customer, CustomerStatus } from '../../types';
-import { X, Building2, User, Phone, Mail, MapPin } from 'lucide-react';
+import { Customer, CustomerStatus, DocumentAttachment } from '../../types';
+import { DocumentUploader } from './DocumentUploader';
+import {
+  X,
+  Building2,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Briefcase,
+  ShieldCheck,
+  Headphones,
+  CreditCard,
+  FileCheck,
+} from 'lucide-react';
 
 interface CustomerFormModalProps {
   isOpen: boolean;
@@ -15,20 +29,35 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  // Company & Identity
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [nik, setNik] = useState('');
   const [npwp, setNpwp] = useState('');
   const [nib, setNib] = useState('');
+  const [npwpDocument, setNpwpDocument] = useState<DocumentAttachment | null>(null);
+  const [nibDocument, setNibDocument] = useState<DocumentAttachment | null>(null);
   const [picPosition, setPicPosition] = useState('');
+  const [status, setStatus] = useState<CustomerStatus>('Aktif');
+
+  // Contact & Address
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [province, setProvince] = useState('');
   const [postalCode, setPostalCode] = useState('');
-  const [status, setStatus] = useState<CustomerStatus>('Aktif');
   const [notes, setNotes] = useState('');
+
+  // Required Fields: Sales, Technical PIC, Finance PIC, Subscription Period, Responsible Person
+  const [salesName, setSalesName] = useState('');
+  const [salesPhone, setSalesPhone] = useState('');
+  const [picTechnicalPhone, setPicTechnicalPhone] = useState('');
+  const [picFinanceName, setPicFinanceName] = useState('');
+  const [picFinancePhone, setPicFinancePhone] = useState('');
+  const [subscriptionPeriod, setSubscriptionPeriod] = useState('12 Bulan (1 Tahun)');
+  const [responsiblePerson, setResponsiblePerson] = useState('');
+  const [responsiblePersonPhone, setResponsiblePersonPhone] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -39,6 +68,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       setNik(customerToEdit.nik || '');
       setNpwp(customerToEdit.npwp || '');
       setNib(customerToEdit.nib || '');
+      setNpwpDocument(customerToEdit.npwpDocument || null);
+      setNibDocument(customerToEdit.nibDocument || null);
       setPicPosition(customerToEdit.picPosition || '');
       setWhatsapp(customerToEdit.whatsapp || '');
       setEmail(customerToEdit.email || '');
@@ -48,12 +79,23 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       setPostalCode(customerToEdit.postalCode || '');
       setStatus(customerToEdit.status || 'Aktif');
       setNotes(customerToEdit.notes || '');
+
+      setSalesName(customerToEdit.salesName || '');
+      setSalesPhone(customerToEdit.salesPhone || '');
+      setPicTechnicalPhone(customerToEdit.picTechnicalPhone || '');
+      setPicFinanceName(customerToEdit.picFinanceName || '');
+      setPicFinancePhone(customerToEdit.picFinancePhone || '');
+      setSubscriptionPeriod(customerToEdit.subscriptionPeriod || '12 Bulan (1 Tahun)');
+      setResponsiblePerson(customerToEdit.responsiblePerson || '');
+      setResponsiblePersonPhone(customerToEdit.responsiblePersonPhone || '');
     } else {
       setFullName('');
       setCompanyName('');
       setNik('');
       setNpwp('');
       setNib('');
+      setNpwpDocument(null);
+      setNibDocument(null);
       setPicPosition('');
       setWhatsapp('');
       setEmail('');
@@ -63,6 +105,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       setPostalCode('');
       setStatus('Aktif');
       setNotes('');
+
+      setSalesName('');
+      setSalesPhone('');
+      setPicTechnicalPhone('');
+      setPicFinanceName('');
+      setPicFinancePhone('');
+      setSubscriptionPeriod('12 Bulan (1 Tahun)');
+      setResponsiblePerson('');
+      setResponsiblePersonPhone('');
     }
     setErrors({});
   }, [customerToEdit, isOpen]);
@@ -72,15 +123,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const validate = () => {
     const errs: Record<string, string> = {};
 
-    if (!fullName.trim()) {
-      errs.fullName = 'Nama lengkap PIC wajib diisi.';
-    }
     if (!companyName.trim()) {
       errs.companyName = 'Nama perusahaan wajib diisi.';
     }
+    if (!fullName.trim()) {
+      errs.fullName = 'Nama lengkap PIC wajib diisi.';
+    }
     if (!whatsapp.trim()) {
       errs.whatsapp = 'Nomor WhatsApp wajib diisi.';
-    } else if (!/^[0-9+ -]{8,16}$/.test(whatsapp.trim())) {
+    } else if (!/^[0-9+ -]{8,18}$/.test(whatsapp.trim())) {
       errs.whatsapp = 'Format nomor WhatsApp tidak valid.';
     }
     if (!email.trim()) {
@@ -103,6 +154,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       nik: nik.trim(),
       npwp: npwp.trim(),
       nib: nib.trim(),
+      npwpDocument,
+      nibDocument,
       picPosition: picPosition.trim(),
       whatsapp: whatsapp.trim(),
       email: email.trim(),
@@ -112,13 +165,22 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       postalCode: postalCode.trim(),
       status,
       notes: notes.trim(),
+
+      salesName: salesName.trim(),
+      salesPhone: salesPhone.trim(),
+      picTechnicalPhone: picTechnicalPhone.trim(),
+      picFinanceName: picFinanceName.trim(),
+      picFinancePhone: picFinancePhone.trim(),
+      subscriptionPeriod: subscriptionPeriod.trim(),
+      responsiblePerson: responsiblePerson.trim() || fullName.trim(),
+      responsiblePersonPhone: responsiblePersonPhone.trim() || whatsapp.trim(),
     });
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div>
@@ -127,8 +189,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </h3>
             <p className="text-xs text-slate-500">
               {customerToEdit
-                ? `Perbarui informasi untuk ${customerToEdit.id}`
-                : 'Lengkapi data identitas perusahaan dan PIC untuk registrasi ISP'}
+                ? `Perbarui informasi & dokumen legal untuk ${customerToEdit.id}`
+                : 'Lengkapi profil pelanggan, tim sales, kontak operasional, dan lampiran dokumen NPWP & NIB'}
             </p>
           </div>
           <button
@@ -139,12 +201,12 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </button>
         </div>
 
-        {/* Form Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
-          {/* Section: Perusahaan */}
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
+          {/* Section 1: Data Perusahaan & Legalitas */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800 mb-3 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" /> Data Perusahaan
+              <Building2 className="w-3.5 h-3.5" /> 1. Identitas Perusahaan & Legalitas
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
@@ -153,7 +215,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Contoh: PT Contoh Digital"
+                  placeholder="Contoh: PT Contoh Digital Solusindo"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 ${
@@ -163,84 +225,6 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 {errors.companyName && (
                   <p className="text-[11px] text-rose-500 mt-1">{errors.companyName}</p>
                 )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  NPWP Perusahaan
-                </label>
-                <input
-                  type="text"
-                  placeholder="01.234.567.8-012.000"
-                  value={npwp}
-                  onChange={(e) => setNpwp(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  NIB (Nomor Induk Berusaha)
-                </label>
-                <input
-                  type="text"
-                  placeholder="9120001234567"
-                  value={nib}
-                  onChange={(e) => setNib(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: PIC / Personal */}
-          <div className="pt-2 border-t border-slate-100">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800 mb-3 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5" /> Data PIC (Penanggung Jawab)
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nama Lengkap PIC <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Budi Santoso"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 ${
-                    errors.fullName ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
-                  }`}
-                />
-                {errors.fullName && (
-                  <p className="text-[11px] text-rose-500 mt-1">{errors.fullName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Jabatan PIC
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Direktur IT / Manager Operasional"
-                  value={picPosition}
-                  onChange={(e) => setPicPosition(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  NIK / KTP
-                </label>
-                <input
-                  type="text"
-                  placeholder="3171012304850001"
-                  value={nik}
-                  onChange={(e) => setNik(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
-                />
               </div>
 
               <div>
@@ -258,25 +242,159 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   <option value="Tidak Aktif">Tidak Aktif</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-teal-700" /> Jangka Waktu Berlangganan
+                </label>
+                <select
+                  value={subscriptionPeriod}
+                  onChange={(e) => setSubscriptionPeriod(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 bg-white"
+                >
+                  <option value="Bulanan (Tanpa Kontrak)">Bulanan (Tanpa Kontrak / Fleksibel)</option>
+                  <option value="3 Bulan">3 Bulan</option>
+                  <option value="6 Bulan">6 Bulan</option>
+                  <option value="12 Bulan (1 Tahun)">12 Bulan (1 Tahun) - Standar</option>
+                  <option value="24 Bulan (2 Tahun)">24 Bulan (2 Tahun)</option>
+                  <option value="36 Bulan (3 Tahun)">36 Bulan (3 Tahun)</option>
+                  <option value="Khusus / Custom Agreement">Khusus / Custom Agreement</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Lampiran Dokumen NPWP & NIB */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <DocumentUploader
+                label="Dokumen NPWP Perusahaan"
+                numberLabel="Nomor NPWP"
+                numberPlaceholder="01.234.567.8-012.000"
+                documentNumberValue={npwp}
+                onDocumentNumberChange={setNpwp}
+                document={npwpDocument}
+                onChange={setNpwpDocument}
+              />
+
+              <DocumentUploader
+                label="Dokumen NIB (Nomor Induk Berusaha)"
+                numberLabel="Nomor NIB"
+                numberPlaceholder="9120001234567"
+                documentNumberValue={nib}
+                onDocumentNumberChange={setNib}
+                document={nibDocument}
+                onChange={setNibDocument}
+              />
             </div>
           </div>
 
-          {/* Section: Kontak */}
-          <div className="pt-2 border-t border-slate-100">
+          {/* Section 2: Penanggung Jawab & Tim Sales */}
+          <div className="pt-3 border-t border-slate-200">
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800 mb-3 flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5" /> Kontak & Komunikasi
+              <Briefcase className="w-3.5 h-3.5" /> 2. Penanggung Jawab & Account Executive (Sales)
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-teal-700" /> Penanggung Jawab Perusahaan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Ir. Bambang Trihatmojo (Direktur Utama)"
+                  value={responsiblePerson}
+                  onChange={(e) => setResponsiblePerson(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nomor WhatsApp <span className="text-rose-500">*</span>
+                  No. Telpon Penanggung Jawab
+                </label>
+                <input
+                  type="text"
+                  placeholder="08119887766"
+                  value={responsiblePersonPhone}
+                  onChange={(e) => setResponsiblePersonPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Sales Representatif / Account Executive
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Rian Pratama"
+                  value={salesName}
+                  onChange={(e) => setSalesName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nomor Telpon Sales
+                </label>
+                <input
+                  type="text"
+                  placeholder="081298765432"
+                  value={salesPhone}
+                  onChange={(e) => setSalesPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Data PIC Teknis & PIC Keuangan */}
+          <div className="pt-3 border-t border-slate-200">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800 mb-3 flex items-center gap-1.5">
+              <Headphones className="w-3.5 h-3.5" /> 3. PIC Utama, PIC Teknis & PIC Keuangan
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* PIC Utama */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nama Lengkap PIC Utama <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Budi Santoso"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 ${
+                    errors.fullName ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
+                  }`}
+                />
+                {errors.fullName && (
+                  <p className="text-[11px] text-rose-500 mt-1">{errors.fullName}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Jabatan PIC Utama
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Direktur IT / Manager Operasional"
+                  value={picPosition}
+                  onChange={(e) => setPicPosition(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nomor WhatsApp PIC Utama <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="081234567890"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
-                  className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 ${
+                  className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono ${
                     errors.whatsapp ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'
                   }`}
                 />
@@ -287,7 +405,46 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email Perusahaan / Billing <span className="text-rose-500">*</span>
+                  No. PIC Teknis / NOC Client
+                </label>
+                <input
+                  type="text"
+                  placeholder="081211223344 (Hotline Teknisi / Network Admin)"
+                  value={picTechnicalPhone}
+                  onChange={(e) => setPicTechnicalPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nama PIC Keuangan / Finance
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Ratna Wulandari"
+                  value={picFinanceName}
+                  onChange={(e) => setPicFinanceName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  No. PIC Keuangan (WhatsApp / Telepon)
+                </label>
+                <input
+                  type="text"
+                  placeholder="081255667788"
+                  value={picFinancePhone}
+                  onChange={(e) => setPicFinancePhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Email Perusahaan / Tagihan <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -302,29 +459,42 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   <p className="text-[11px] text-rose-500 mt-1">{errors.email}</p>
                 )}
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  NIK PIC / KTP
+                </label>
+                <input
+                  type="text"
+                  placeholder="3171012304850001"
+                  value={nik}
+                  onChange={(e) => setNik(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Section: Alamat */}
-          <div className="pt-2 border-t border-slate-100">
+          {/* Section 4: Alamat Pemasangan */}
+          <div className="pt-3 border-t border-slate-200">
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800 mb-3 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" /> Lokasi & Alamat
+              <MapPin className="w-3.5 h-3.5" /> 4. Alamat Pemasangan & Kantor
             </h4>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Alamat Lengkap Kantor / Pemasangan
+                  Alamat Lengkap Kantor / Titik Terminasi Link
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Nama gedung, lantai, jalan, nomor kavling..."
+                  placeholder="Nama gedung, lantai, ruangan server, jalan, nomor kavling..."
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Kota</label>
                   <input
@@ -352,7 +522,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     placeholder="12950"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 font-mono"
                   />
                 </div>
               </div>
@@ -363,7 +533,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Kebutuhan SLA 99.8%, port fiber optic, dll..."
+                  placeholder="Contoh: Port SFP+ 10G di Rack 4B, perlu izin akses gedung H-1..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
@@ -373,7 +543,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
 
           {/* Footer Buttons */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3 sticky bottom-0 bg-white">
             <button
               type="button"
               onClick={onClose}

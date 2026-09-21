@@ -1,12 +1,22 @@
 export type CustomerStatus = 'Aktif' | 'Tidak Aktif' | 'Suspended' | 'Prospek';
 
+export interface DocumentAttachment {
+  name: string;
+  size?: number; // bytes
+  type?: string; // e.g. 'application/pdf' or 'image/png'
+  fileData?: string; // base64 or blob URL
+  uploadedAt: string;
+}
+
 export interface Customer {
   id: string; // e.g. CUS-2026-00001
   fullName: string;
   nik: string;
   companyName: string;
-  npwp: string;
-  nib: string;
+  npwp: string; // Nomor NPWP
+  nib: string; // Nomor NIB
+  npwpDocument?: DocumentAttachment | null; // Lampiran Dokumen NPWP
+  nibDocument?: DocumentAttachment | null; // Lampiran Dokumen NIB
   picPosition: string;
   whatsapp: string;
   email: string;
@@ -17,6 +27,16 @@ export interface Customer {
   status: CustomerStatus;
   notes?: string;
   createdAt: string;
+
+  // Additional Sales, Technical, Finance & Contract Info
+  salesName?: string; // Nama Sales
+  salesPhone?: string; // Nomor Telpon Sales
+  picTechnicalPhone?: string; // Nomor PIC Teknis
+  picFinanceName?: string; // Nama PIC Keuangan
+  picFinancePhone?: string; // Nomor PIC Keuangan
+  subscriptionPeriod?: string; // Jangka Waktu Berlangganan (e.g. '12 Bulan (1 Tahun)', '24 Bulan', '6 Bulan')
+  responsiblePerson?: string; // Penanggung Jawab
+  responsiblePersonPhone?: string; // Nomor Penanggung Jawab
 }
 
 export type MetroPriceMethod = 'Per Mbps' | 'Per Gbps' | 'Per 100 Mbps';
@@ -69,6 +89,44 @@ export interface PricingAllocation {
   marketingPool: PricingAllocationItem;
   sales: PricingAllocationItem;
   am: PricingAllocationItem;
+}
+
+export type MetroFormulaMethod =
+  | 'proportional_capacity' // (Bandwidth / Metro Base Capacity) * Harga Metro
+  | 'per_mbps'              // Bandwidth * Harga Metro
+  | 'per_gbps'              // (Bandwidth / 1000) * Harga Metro
+  | 'per_100mbps'           // (Bandwidth / 100) * Harga Metro
+  | 'flat_port';            // Flat rate per port terlepas dari bandwidth
+
+export type MetroRoundingRule = 'none' | 'round_thousand' | 'round_hundred_thousand';
+
+export interface CalculationFormulaConfig {
+  id: string;
+  updatedAt: string;
+  updatedBy: string;
+
+  // Rumus Internet Dedicated
+  internetCalculationMethod: 'tier_priority_fallback' | 'pure_per_mbps';
+  internetFallbackPer100Mbps: number; // default 3000000
+  internetFallbackPerMbps: number;    // default 30000
+  ppnPercentage: number;              // default 11
+  maxDiscountPercentage: number;      // default 50
+
+  // Rumus Metro Ethernet
+  metroCalculationMethod: MetroFormulaMethod;
+  metroMultiplierRatio: number;       // default 1.0 (misal 1.25 untuk link redundansi)
+  metroRoundingRule: MetroRoundingRule;
+  metroMinimumPrice: number;          // tarif minimum metro per bulan
+
+  // Rumus Fee Sales & Marketing Allocation
+  kantorPercentage: number;           // default 60 (%)
+  marketingPoolPercentage: number;    // default 40 (%)
+  salesPercentageOfPool: number;      // default 75 (%)
+  amPercentageOfPool: number;         // default 25 (%)
+  minimumMarginForFee: number;        // default 0 (margin minimum agar komisi cair)
+  enableSalesBonus: boolean;          // default false
+  bonusThresholdMargin: number;       // default 5000000
+  salesBonusPercentage: number;       // default 5 (%)
 }
 
 export interface FeeWithdrawalRecord {
@@ -216,6 +274,7 @@ export type ActiveMenu =
   | 'quotations'
   | 'invoices'
   | 'marketing-fee'
+  | 'formula-settings'
   | 'users'
   | 'audit-log';
 

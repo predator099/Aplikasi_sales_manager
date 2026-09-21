@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { FeeWithdrawalRecord } from '../../types';
 import { FEE_RULES } from '../../utils/pricingEngine';
+import { Sliders } from 'lucide-react';
 
 export const MarketingFeeDashboard: React.FC = () => {
   const {
@@ -34,6 +35,7 @@ export const MarketingFeeDashboard: React.FC = () => {
     addWithdrawal,
     updateWithdrawalStatus,
     setActiveMenu,
+    formulaConfig,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,136 +185,76 @@ export const MarketingFeeDashboard: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Fee & Komisi Marketing
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight">
+            Fee & Komisi Sales
           </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Alokasi fee marketing pool, komisi closing sales, dan pencairan komisi
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsWithdrawModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-2xs transition-colors cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>Ajukan Pencairan Fee</span>
-          </button>
-          <button
-            onClick={() => setActiveMenu('create-service')}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-colors cursor-pointer"
-          >
-            <Layers className="w-3.5 h-3.5 text-slate-500" />
-            <span>Kalkulator Layanan</span>
+            <span>Ajukan Pencairan</span>
           </button>
         </div>
       </div>
 
-      {/* 6 Key Metrics Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-3.5">
+      {/* 4 Key Metrics Cards Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. Marketing Pool */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-              Marketing Pool
-            </span>
-            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center">
-              <Users className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <span className="text-base font-bold text-slate-900 font-mono block">
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+            Marketing Pool
+          </span>
+          <span className="text-lg font-bold text-slate-900 font-mono mt-1 block">
             {formatRupiah(metrics.totalMarketingPool)}
           </span>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">
-            40% Total Margin
+          <span className="text-[11px] text-slate-400 mt-0.5 block">
+            {formulaConfig.marketingPoolPercentage}% Total Margin
           </span>
         </div>
 
-        {/* 2. Sales Allocation */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-              Alokasi Sales
-            </span>
-            <div className="w-7 h-7 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-100">
-              <Briefcase className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <span className="text-base font-bold text-amber-900 font-mono block">
-            {formatRupiah(metrics.totalSales)}
+        {/* 2. Saldo Siap Cair */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+            Saldo Tersedia
           </span>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">
-            75% dari Pool (Closing)
-          </span>
-        </div>
-
-        {/* 3. AM Allocation */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-              Alokasi AM
-            </span>
-            <div className="w-7 h-7 rounded-md bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-100">
-              <UserCheck className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <span className="text-base font-bold text-purple-900 font-mono block">
-            {formatRupiah(metrics.totalAm)}
-          </span>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">
-            25% dari Pool (Retensi)
-          </span>
-        </div>
-
-        {/* 4. Available Balance */}
-        <div className="bg-white p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wide">
-              Saldo Siap Cair
-            </span>
-            <div className="w-7 h-7 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center">
-              <DollarSign className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <span className="text-base font-bold text-emerald-700 font-mono block">
+          <span className="text-lg font-bold text-emerald-700 font-mono mt-1 block">
             {formatRupiah(metrics.availablePoolBalance)}
           </span>
-          <span className="text-[10px] text-emerald-600 mt-0.5 block">
-            Sisa Pool Tersedia
+          <span className="text-[11px] text-slate-400 mt-0.5 block">
+            Siap dicairkan
           </span>
         </div>
 
-        {/* 5. Pending Withdrawal */}
-        <div className="bg-white p-3.5 rounded-xl border border-amber-200 bg-amber-50/20 shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">
-              Menunggu Approval
-            </span>
-            <div className="w-7 h-7 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <span className="text-base font-bold text-amber-700 font-mono block">
+        {/* 3. Menunggu Approval */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+            Menunggu Approval
+          </span>
+          <span className="text-lg font-bold text-amber-600 font-mono mt-1 block">
             {formatRupiah(metrics.totalPending)}
           </span>
-          <span className="text-[10px] text-amber-600 mt-0.5 block">
-            Dalam Proses Kasir
+          <span className="text-[11px] text-slate-400 mt-0.5 block">
+            Dalam proses kasir
           </span>
         </div>
 
-        {/* 6. Paid */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-              Komisi Tertransfer
-            </span>
-            <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <span className="text-base font-bold text-blue-900 font-mono block">
+        {/* 4. Tertransfer */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+            Telah Dicairkan
+          </span>
+          <span className="text-lg font-bold text-slate-900 font-mono mt-1 block">
             {formatRupiah(metrics.totalPaid)}
           </span>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">
-            Sudah Dibayarkan
+          <span className="text-[11px] text-slate-400 mt-0.5 block">
+            Total transfer berhasil
           </span>
         </div>
       </div>

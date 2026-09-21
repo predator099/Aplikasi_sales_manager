@@ -3,6 +3,7 @@ import {
   Metro,
   PublicIp,
   PricingConfig,
+  CalculationFormulaConfig,
   ServiceItem,
   Quotation,
   Invoice,
@@ -10,6 +11,35 @@ import {
   AuditLog,
   FeeWithdrawalRecord,
 } from '../types';
+
+export const DEFAULT_FORMULA_CONFIG: CalculationFormulaConfig = {
+  id: 'FORMULA-DEFAULT-v1',
+  updatedAt: new Date().toISOString(),
+  updatedBy: 'Administrator',
+
+  // Rumus Internet Dedicated
+  internetCalculationMethod: 'tier_priority_fallback',
+  internetFallbackPer100Mbps: 3000000,
+  internetFallbackPerMbps: 30000,
+  ppnPercentage: 11,
+  maxDiscountPercentage: 50,
+
+  // Rumus Metro Ethernet
+  metroCalculationMethod: 'proportional_capacity',
+  metroMultiplierRatio: 1.0,
+  metroRoundingRule: 'none',
+  metroMinimumPrice: 0,
+
+  // Rumus Fee Sales & Marketing Allocation
+  kantorPercentage: 60,
+  marketingPoolPercentage: 40,
+  salesPercentageOfPool: 75,
+  amPercentageOfPool: 25,
+  minimumMarginForFee: 0,
+  enableSalesBonus: false,
+  bonusThresholdMargin: 5000000,
+  salesBonusPercentage: 5,
+};
 
 export const INITIAL_PRICING: PricingConfig = {
   internetPricePer100Mbps: 3000000,
@@ -93,6 +123,18 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     companyName: 'PT Contoh Digital',
     npwp: '01.234.567.8-012.000',
     nib: '9120001234567',
+    npwpDocument: {
+      name: 'NPWP_PT_Contoh_Digital.pdf',
+      size: 245000,
+      type: 'application/pdf',
+      uploadedAt: '2026-08-01T08:30:00Z',
+    },
+    nibDocument: {
+      name: 'NIB_OSS_Contoh_Digital.pdf',
+      size: 512000,
+      type: 'application/pdf',
+      uploadedAt: '2026-08-01T08:30:00Z',
+    },
     picPosition: 'Direktur IT & Infrastruktur',
     whatsapp: '081234567890',
     email: 'budi@contohdigital.co.id',
@@ -103,6 +145,15 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     status: 'Aktif',
     notes: 'Klien dedicated enterprise sejak 2025. SLA 99.8%.',
     createdAt: '2026-08-01T08:30:00Z',
+
+    salesName: 'Rian Pratama',
+    salesPhone: '081298765432',
+    picTechnicalPhone: '081211223344',
+    picFinanceName: 'Ratna Wulandari',
+    picFinancePhone: '081255667788',
+    subscriptionPeriod: '12 Bulan (1 Tahun)',
+    responsiblePerson: 'Ir. Bambang Trihatmojo',
+    responsiblePersonPhone: '08119887766',
   },
   {
     id: 'CUS-2026-00002',
@@ -111,6 +162,18 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     companyName: 'CV Nusantara Media',
     npwp: '02.456.789.1-034.000',
     nib: '9120007654321',
+    npwpDocument: {
+      name: 'NPWP_CV_Nusantara_Media.pdf',
+      size: 198000,
+      type: 'application/pdf',
+      uploadedAt: '2026-08-15T09:15:00Z',
+    },
+    nibDocument: {
+      name: 'NIB_Nusantara_Media_2026.pdf',
+      size: 420000,
+      type: 'application/pdf',
+      uploadedAt: '2026-08-15T09:15:00Z',
+    },
     picPosition: 'General Manager',
     whatsapp: '081398765432',
     email: 'dewi@nusantaramedia.net',
@@ -121,6 +184,15 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     status: 'Aktif',
     notes: 'Koneksi backbone studio streaming & broadcast.',
     createdAt: '2026-08-15T09:15:00Z',
+
+    salesName: 'Rian Pratama',
+    salesPhone: '081298765432',
+    picTechnicalPhone: '081333445566',
+    picFinanceName: 'Agus Salim',
+    picFinancePhone: '081377889900',
+    subscriptionPeriod: '24 Bulan (2 Tahun)',
+    responsiblePerson: 'Dewi Lestari',
+    responsiblePersonPhone: '081398765432',
   },
   {
     id: 'CUS-2026-00003',
@@ -129,6 +201,18 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     companyName: 'PT Borneo Telekom Solusindo',
     npwp: '03.789.123.4-056.000',
     nib: '9120009876543',
+    npwpDocument: {
+      name: 'SK_NPWP_Borneo_Telekom.pdf',
+      size: 310000,
+      type: 'application/pdf',
+      uploadedAt: '2026-08-28T14:00:00Z',
+    },
+    nibDocument: {
+      name: 'NIB_RBA_Borneo_Telekom.pdf',
+      size: 670000,
+      type: 'application/pdf',
+      uploadedAt: '2026-08-28T14:00:00Z',
+    },
     picPosition: 'Head of Infrastructure',
     whatsapp: '085277889900',
     email: 'hendra@borneotelekom.id',
@@ -139,6 +223,15 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     status: 'Aktif',
     notes: 'Kebutuhan link IKN support, bandwidth 2 Gbps.',
     createdAt: '2026-08-28T14:00:00Z',
+
+    salesName: 'Siti Aminah',
+    salesPhone: '081344556677',
+    picTechnicalPhone: '085299887766',
+    picFinanceName: 'Linda Permata',
+    picFinancePhone: '085211223344',
+    subscriptionPeriod: '36 Bulan (3 Tahun)',
+    responsiblePerson: 'Hendra Kurniawan',
+    responsiblePersonPhone: '085277889900',
   },
   {
     id: 'CUS-2026-00004',
@@ -147,6 +240,8 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     companyName: 'PT Mega Citra Solusi',
     npwp: '04.987.654.3-078.000',
     nib: '9120003456789',
+    npwpDocument: null,
+    nibDocument: null,
     picPosition: 'Procurement Officer',
     whatsapp: '081122334455',
     email: 'aditya@megacitra.co.id',
@@ -157,6 +252,15 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     status: 'Prospek',
     notes: 'Sedang penawaran quotation 500 Mbps Metro A.',
     createdAt: '2026-09-02T11:20:00Z',
+
+    salesName: 'Rian Pratama',
+    salesPhone: '081298765432',
+    picTechnicalPhone: '081199887766',
+    picFinanceName: 'Citra Dewi',
+    picFinancePhone: '081144332211',
+    subscriptionPeriod: '12 Bulan (1 Tahun)',
+    responsiblePerson: 'Aditya Pratama',
+    responsiblePersonPhone: '081122334455',
   },
 ];
 

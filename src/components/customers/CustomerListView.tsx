@@ -10,7 +10,6 @@ import {
   Search,
   Filter,
   Plus,
-  MoreHorizontal,
   Eye,
   Edit2,
   UserX,
@@ -19,6 +18,11 @@ import {
   ChevronRight,
   Download,
   Building2,
+  FileCheck,
+  Calendar,
+  Phone,
+  Briefcase,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const CustomerListView: React.FC = () => {
@@ -50,13 +54,19 @@ export const CustomerListView: React.FC = () => {
 
   // Filtered & Searched data
   const filteredCustomers = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return customers.filter((c) => {
       const matchSearch =
-        c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.whatsapp.includes(searchQuery) ||
-        c.email.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        c.id.toLowerCase().includes(q) ||
+        c.fullName.toLowerCase().includes(q) ||
+        c.companyName.toLowerCase().includes(q) ||
+        c.whatsapp.includes(q) ||
+        c.email.toLowerCase().includes(q) ||
+        (c.salesName && c.salesName.toLowerCase().includes(q)) ||
+        (c.salesPhone && c.salesPhone.includes(q)) ||
+        (c.responsiblePerson && c.responsiblePerson.toLowerCase().includes(q)) ||
+        (c.picFinanceName && c.picFinanceName.toLowerCase().includes(q));
 
       const matchStatus = statusFilter === 'all' || c.status === statusFilter;
       return matchSearch && matchStatus;
@@ -85,6 +95,60 @@ export const CustomerListView: React.FC = () => {
     updateCustomer(customer.id, { status: nextStatus });
   };
 
+  // Export to CSV helper
+  const handleExportCSV = () => {
+    const headers = [
+      'Customer ID',
+      'Perusahaan',
+      'PIC Utama',
+      'WhatsApp PIC',
+      'Email',
+      'Sales',
+      'No Telpon Sales',
+      'No PIC Teknis',
+      'PIC Keuangan',
+      'No PIC Keuangan',
+      'Jangka Waktu Berlangganan',
+      'Penanggung Jawab',
+      'No Penanggung Jawab',
+      'NPWP',
+      'Lampiran NPWP',
+      'NIB',
+      'Lampiran NIB',
+      'Status',
+    ];
+
+    const rows = filteredCustomers.map((c) => [
+      `"${c.id}"`,
+      `"${c.companyName}"`,
+      `"${c.fullName}"`,
+      `"${c.whatsapp}"`,
+      `"${c.email}"`,
+      `"${c.salesName || '-'}"`,
+      `"${c.salesPhone || '-'}"`,
+      `"${c.picTechnicalPhone || '-'}"`,
+      `"${c.picFinanceName || '-'}"`,
+      `"${c.picFinancePhone || '-'}"`,
+      `"${c.subscriptionPeriod || '-'}"`,
+      `"${c.responsiblePerson || '-'}"`,
+      `"${c.responsiblePersonPhone || '-'}"`,
+      `"${c.npwp || '-'}"`,
+      `"${c.npwpDocument ? c.npwpDocument.name : 'Tidak Ada'}"`,
+      `"${c.nib || '-'}"`,
+      `"${c.nibDocument ? c.nibDocument.name : 'Tidak Ada'}"`,
+      `"${c.status}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Database_Pelanggan_ANTEN_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -98,52 +162,60 @@ export const CustomerListView: React.FC = () => {
               {customers.length} Terdaftar
             </span>
           </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manajemen lengkap akun pelanggan, PIC operasional, PIC keuangan, Sales representatif, kontrak berlangganan, dan dokumen legal NPWP/NIB
+          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            title="Export CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </button>
           <button
             onClick={() => {
               setCustomerToEdit(null);
               setFormModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-teal-800 hover:bg-teal-900 rounded-lg transition-colors shadow-2xs cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             <span>Tambah Pelanggan</span>
           </button>
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari ID, nama, PT, WA, email..."
+            placeholder="Cari ID, perusahaan, PIC, sales, penanggung jawab, telpon, email..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
+            className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 bg-slate-50/50 focus:bg-white"
           />
         </div>
 
-        {/* Status Filter */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-xs font-medium text-slate-600">Status:</span>
+        <div className="flex items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
+            className="px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50/50 focus:bg-white text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
           >
-            <option value="all">Semua Status ({customers.length})</option>
+            <option value="all">Semua Status</option>
             <option value="Aktif">Aktif</option>
             <option value="Prospek">Prospek</option>
             <option value="Suspended">Suspended</option>
@@ -158,22 +230,19 @@ export const CustomerListView: React.FC = () => {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="py-2.5 px-4">Customer ID</th>
-                <th className="py-2.5 px-4">Nama / PIC</th>
-                <th className="py-2.5 px-4">Perusahaan</th>
-                <th className="py-2.5 px-4">NIK</th>
-                <th className="py-2.5 px-4">NPWP</th>
-                <th className="py-2.5 px-4">NIB</th>
-                <th className="py-2.5 px-4">WhatsApp</th>
-                <th className="py-2.5 px-4">Email</th>
-                <th className="py-2.5 px-4">Status</th>
-                <th className="py-2.5 px-4 text-right">Action</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">ID</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Instansi / Perusahaan</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Sales</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Kontak (NOC / Teknis)</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Kontrak</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Status</th>
+                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="text-sm font-medium">Tidak ada data pelanggan yang cocok.</p>
                     <p className="text-xs text-slate-400 mt-1">
@@ -188,45 +257,58 @@ export const CustomerListView: React.FC = () => {
                     className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                     onClick={() => openCustomerDetail(customer.id)}
                   >
-                    <td className="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
+                    {/* Customer ID */}
+                    <td className="py-3 px-3.5 font-mono font-semibold text-slate-900 whitespace-nowrap">
                       {customer.id}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-800">{customer.fullName}</div>
-                      <div className="text-[10px] text-slate-400">{customer.picPosition || 'PIC'}</div>
+
+                    {/* Perusahaan & Penanggung Jawab */}
+                    <td className="py-3 px-3.5">
+                      <div className="font-semibold text-slate-900">{customer.companyName}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {customer.responsiblePerson || customer.fullName} {customer.city ? `• ${customer.city}` : ''}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">
-                      {customer.companyName}
+
+                    {/* Sales */}
+                    <td className="py-3 px-3.5 whitespace-nowrap">
+                      <span className="font-medium text-slate-800">{customer.salesName || '-'}</span>
                     </td>
-                    <td className="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">
-                      {customer.nik || '-'}
+
+                    {/* Kontak Teknis / NOC */}
+                    <td className="py-3 px-3.5 whitespace-nowrap">
+                      <div className="font-mono text-slate-700 font-medium">
+                        {customer.picTechnicalPhone || customer.responsiblePersonPhone || '-'}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {customer.email || 'NOC / Teknis'}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">
-                      {customer.npwp || '-'}
+
+                    {/* Jangka Waktu Berlangganan */}
+                    <td className="py-3 px-3.5 whitespace-nowrap">
+                      <span className="text-[11px] text-slate-600">
+                        {customer.subscriptionPeriod || '12 Bulan'}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">
-                      {customer.nib || '-'}
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-700">
-                      {customer.whatsapp}
-                    </td>
-                    <td className="py-3 px-4 text-slate-600 truncate max-w-[160px]">
-                      {customer.email}
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
+
+                    {/* Status */}
+                    <td className="py-3 px-3.5 whitespace-nowrap">
                       <CustomerStatusBadge status={customer.status} />
                     </td>
+
+                    {/* Actions */}
                     <td
-                      className="py-3 px-4 text-right whitespace-nowrap"
+                      className="py-3 px-3.5 text-right whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openCustomerDetail(customer.id)}
                           title="Lihat Detail Customer"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-teal-50 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => {
@@ -234,9 +316,9 @@ export const CustomerListView: React.FC = () => {
                             setFormModalOpen(true);
                           }}
                           title="Edit Customer"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setConfirmTarget(customer)}
@@ -245,16 +327,16 @@ export const CustomerListView: React.FC = () => {
                               ? 'Nonaktifkan Customer'
                               : 'Aktifkan Customer'
                           }
-                          className={`p-1.5 rounded-lg transition-colors ${
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                             customer.status === 'Aktif'
                               ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
                               : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
                           }`}
                         >
                           {customer.status === 'Aktif' ? (
-                            <UserX className="w-4 h-4" />
+                            <UserX className="w-3.5 h-3.5" />
                           ) : (
-                            <UserCheck className="w-4 h-4" />
+                            <UserCheck className="w-3.5 h-3.5" />
                           )}
                         </button>
                       </div>
@@ -267,43 +349,43 @@ export const CustomerListView: React.FC = () => {
         </div>
 
         {/* Pagination Footer */}
-        <div className="p-4 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+        <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50 text-xs text-slate-500">
           <div>
             Menampilkan{' '}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-slate-700">
               {filteredCustomers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
             </span>{' '}
             -{' '}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-slate-700">
               {Math.min(currentPage * itemsPerPage, filteredCustomers.length)}
             </span>{' '}
-            dari <span className="font-semibold text-slate-900">{filteredCustomers.length}</span>{' '}
+            dari <span className="font-semibold text-slate-700">{filteredCustomers.length}</span>{' '}
             pelanggan
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
             </button>
-            <span className="px-3 py-1 font-medium bg-white border border-slate-200 rounded-lg">
-              {currentPage} / {totalPages}
+            <span className="px-3 py-1 text-slate-700 font-medium">
+              Halaman {currentPage} / {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 text-slate-600" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Customer Form Modal (Add & Edit) */}
+      {/* Form Modal for Create & Edit */}
       <CustomerFormModal
         isOpen={formModalOpen}
         customerToEdit={customerToEdit}
@@ -311,21 +393,27 @@ export const CustomerListView: React.FC = () => {
           setFormModalOpen(false);
           setCustomerToEdit(null);
         }}
-        onSubmit={customerToEdit ? handleUpdateCustomer : handleCreateCustomer}
+        onSubmit={(data) => {
+          if (customerToEdit) {
+            handleUpdateCustomer(data);
+          } else {
+            handleCreateCustomer(data);
+          }
+        }}
       />
 
-      {/* Customer Detail Modal */}
+      {/* Detail Modal */}
       <CustomerDetailModal
         customer={selectedCustomer}
         onClose={closeCustomerDetail}
-        onEdit={(cust) => {
+        onEdit={(customer) => {
           closeCustomerDetail();
-          setCustomerToEdit(cust);
+          setCustomerToEdit(customer);
           setFormModalOpen(true);
         }}
       />
 
-      {/* Confirmation Dialog for Status Toggle */}
+      {/* Status Toggle Confirmation */}
       <ConfirmDialog
         isOpen={!!confirmTarget}
         title={
@@ -335,15 +423,16 @@ export const CustomerListView: React.FC = () => {
         }
         message={
           confirmTarget?.status === 'Aktif'
-            ? `Apakah Anda yakin ingin menonaktifkan akun ${confirmTarget?.companyName}? Layanan dan tagihan yang terkait dapat ditinjau ulang.`
-            : `Aktifkan kembali status pelanggan ${confirmTarget?.companyName} agar dapat membuat layanan dan penawaran baru.`
+            ? `Apakah Anda yakin ingin menonaktifkan akun pelanggan ${confirmTarget?.companyName}? Layanan aktif akan tetap tercatat di sistem.`
+            : `Aktifkan kembali akun pelanggan ${confirmTarget?.companyName}?`
         }
-        confirmLabel={
-          confirmTarget?.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'
-        }
-        variant={confirmTarget?.status === 'Aktif' ? 'warning' : 'primary'}
+        confirmLabel={confirmTarget?.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+        variant={confirmTarget?.status === 'Aktif' ? 'danger' : 'primary'}
         onConfirm={() => {
-          if (confirmTarget) toggleStatus(confirmTarget);
+          if (confirmTarget) {
+            toggleStatus(confirmTarget);
+            setConfirmTarget(null);
+          }
         }}
         onCancel={() => setConfirmTarget(null)}
       />

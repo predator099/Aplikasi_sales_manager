@@ -3,6 +3,9 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
 import { ToastContainer } from './components/common/ToastContainer';
+import { LoginPage } from './components/auth/LoginPage';
+
+// Views
 import { DashboardView } from './components/dashboard/DashboardView';
 import { CustomerListView } from './components/customers/CustomerListView';
 import { MasterPricingView } from './components/pricing/MasterPricingView';
@@ -12,9 +15,9 @@ import { CreateServiceView } from './components/services/CreateServiceView';
 import { QuotationListView } from './components/quotations/QuotationListView';
 import { InvoiceListView } from './components/invoices/InvoiceListView';
 import { MarketingFeeDashboard } from './components/marketing/MarketingFeeDashboard';
+import { FormulaSettingsView } from './components/pricing/FormulaSettingsView';
 import { UsersManagementView } from './components/users/UsersManagementView';
 import { AuditLogView } from './components/audit/AuditLogView';
-import { LoginPage } from './components/auth/LoginPage';
 
 const MainContent: React.FC = () => {
   const { activeMenu, isAuthenticated } = useApp();
@@ -47,6 +50,8 @@ const MainContent: React.FC = () => {
         return <InvoiceListView />;
       case 'marketing-fee':
         return <MarketingFeeDashboard />;
+      case 'formula-settings':
+        return <FormulaSettingsView />;
       case 'users':
         return <UsersManagementView />;
       case 'audit-log':
@@ -66,15 +71,15 @@ const MainContent: React.FC = () => {
         setMobileOpen={setMobileOpen}
       />
 
-      {/* Main Column */}
-      <div className="flex-1 flex flex-col transition-all duration-300">
+      {/* Main Content Column */}
+      <div className="flex-1 flex flex-col transition-all duration-200">
         <Topbar
           collapsed={collapsed}
           onToggleMobileMenu={() => setMobileOpen(!mobileOpen)}
         />
 
         <main
-          className={`flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto transition-all duration-300 ${
+          className={`flex-1 p-4 sm:p-6 lg:p-7 max-w-7xl w-full mx-auto transition-all duration-200 ${
             collapsed ? 'lg:pl-24' : 'lg:pl-72'
           }`}
         >
@@ -82,15 +87,19 @@ const MainContent: React.FC = () => {
         </main>
 
         <footer
-          className={`py-4 px-6 text-center text-xs text-slate-400 border-t border-slate-200/70 transition-all duration-300 ${
+          className={`py-3 px-6 text-center text-xs text-slate-400 border-t border-slate-200/80 bg-white/50 transition-all duration-200 ${
             collapsed ? 'lg:pl-24' : 'lg:pl-72'
           }`}
         >
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>ANTEN Business Manager — Solusi Bisnis & Penjualan ISP</span>
-            <span className="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-              v1.0.0
+            <span className="text-[11px] text-slate-500">
+              ANTEN ISP Business Management System
             </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                v1.0.0
+              </span>
+            </div>
           </div>
         </footer>
       </div>
