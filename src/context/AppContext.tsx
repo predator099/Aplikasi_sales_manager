@@ -32,6 +32,7 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_WITHDRAWAL_RECORDS,
 } from '../data/initialData';
+import { apiService } from '../services/apiService';
 
 const STORAGE_KEY = 'anten_biz_mgr_state_v1';
 
@@ -247,6 +248,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY}_isAuthenticated`, JSON.stringify(isAuthenticated));
   }, [isAuthenticated]);
 
+  // Initial Sync from PostgreSQL Server API
+  useEffect(() => {
+    let isMounted = true;
+    const syncData = async () => {
+      try {
+        const [
+          serverCustomers,
+          serverServices,
+          serverQuotes,
+          serverInvoices,
+          serverWithdrawals,
+          serverMetros,
+          serverPublicIps,
+          serverPricing,
+          serverFormula,
+          serverUsers,
+          serverLogs,
+        ] = await Promise.allSettled([
+          apiService.getCustomers(),
+          apiService.getServices(),
+          apiService.getQuotations(),
+          apiService.getInvoices(),
+          apiService.getWithdrawals(),
+          apiService.getMetros(),
+          apiService.getPublicIps(),
+          apiService.getPricing(),
+          apiService.getFormula(),
+          apiService.getUsers(),
+          apiService.getAuditLogs(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (serverCustomers.status === 'fulfilled' && Array.isArray(serverCustomers.value) && serverCustomers.value.length > 0) {
+          setCustomers(serverCustomers.value);
+        }
+        if (serverServices.status === 'fulfilled' && Array.isArray(serverServices.value) && serverServices.value.length > 0) {
+          setServices(serverServices.value);
+        }
+        if (serverQuotes.status === 'fulfilled' && Array.isArray(serverQuotes.value) && serverQuotes.value.length > 0) {
+          setQuotations(serverQuotes.value);
+        }
+        if (serverInvoices.status === 'fulfilled' && Array.isArray(serverInvoices.value) && serverInvoices.value.length > 0) {
+          setInvoices(serverInvoices.value);
+        }
+        if (serverWithdrawals.status === 'fulfilled' && Array.isArray(serverWithdrawals.value) && serverWithdrawals.value.length > 0) {
+          setWithdrawals(serverWithdrawals.value);
+        }
+        if (serverMetros.status === 'fulfilled' && Array.isArray(serverMetros.value) && serverMetros.value.length > 0) {
+          setMetro(serverMetros.value);
+        }
+        if (serverPublicIps.status === 'fulfilled' && Array.isArray(serverPublicIps.value) && serverPublicIps.value.length > 0) {
+          setPublicIps(serverPublicIps.value);
+        }
+        if (serverPricing.status === 'fulfilled' && serverPricing.value) {
+          setPricingConfig(serverPricing.value);
+        }
+        if (serverFormula.status === 'fulfilled' && serverFormula.value) {
+          setFormulaConfig(serverFormula.value);
+        }
+        if (serverUsers.status === 'fulfilled' && Array.isArray(serverUsers.value) && serverUsers.value.length > 0) {
+          setUsers(serverUsers.value);
+        }
+        if (serverLogs.status === 'fulfilled' && Array.isArray(serverLogs.value) && serverLogs.value.length > 0) {
+          setAuditLogs(serverLogs.value);
+        }
+      } catch (err) {
+        console.warn('Sync from API server fallback to local state', err);
+      }
+    };
+
+    syncData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Toast helper
   const addToast = (type: ToastMessage['type'], message: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
@@ -282,6 +360,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ipAddress: '192.168.1.100',
     };
     setAuditLogs((prev) => [newLog, ...prev]);
+    apiService.createAuditLog(newLog).catch(() => {});
   };
 
   // Switch role
@@ -296,6 +375,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setCurrentUser(found);
     setIsAuthenticated(true);
+    apiService.switchRole(role).catch(() => {});
     addToast('info', `Beralih peran ke ${role}`);
   };
 
@@ -325,7 +405,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Password verification (check matched password, or fallback demo passwords: admin123, finance123, sales123, noc123, anten123)
     if (password && password.trim()) {
       const p = password.trim();
-      const validDemoPasswords = ['anten123', 'admin123', 'finance123', 'sales123', 'noc123'];
+      const validDemoPasswords = ['anten123', 'admin123', 'finance123', 'sales123', 'noc123', 'Admin123!'];
       if (foundUser.password && foundUser.password !== p && !validDemoPasswords.includes(p)) {
         return {
           success: false,
@@ -336,6 +416,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCurrentUser(foundUser);
     setIsAuthenticated(true);
+    apiService.login(identifier, password).catch(() => {});
     logAudit(
       'User Login',
       'User',
@@ -356,6 +437,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         `Pengguna ${currentUser.name} telah keluar dari sesi sistem.`
       );
     }
+    apiService.logout().catch(() => {});
     setIsAuthenticated(false);
     addToast('info', 'Anda telah berhasil keluar dari sistem ANTEN.');
   };
@@ -370,6 +452,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setCustomers((prev) => [newCustomer, ...prev]);
+    apiService.createCustomer(newCustomer).catch(() => {});
     logAudit('Created Customer', 'Customer', newId, `Menambahkan pelanggan baru ${newCustomer.companyName} (${newCustomer.fullName})`);
     addToast('success', `Pelanggan ${newCustomer.companyName} berhasil ditambahkan.`);
     return newId;
@@ -379,6 +462,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomers((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...data } : c))
     );
+    apiService.updateCustomer(id, data).catch(() => {});
     logAudit('Updated Customer', 'Customer', id, `Memperbarui informasi pelanggan ${id}`);
     addToast('success', `Data pelanggan ${id} berhasil diperbarui.`);
   };
@@ -387,6 +471,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const customer = customers.find((c) => c.id === id);
     if (!customer) return;
     setCustomers((prev) => prev.filter((c) => c.id !== id));
+    apiService.deleteCustomer(id).catch(() => {});
     logAudit('Deleted Customer', 'Customer', id, `Menghapus data pelanggan ${customer.companyName}`);
     addToast('warning', `Pelanggan ${customer.companyName} telah dihapus.`);
   };
@@ -402,6 +487,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Pricing Config
   const updatePricingConfig = (config: Partial<PricingConfig>) => {
     setPricingConfig((prev) => ({ ...prev, ...config }));
+    apiService.updatePricing(config).catch(() => {});
     logAudit('Updated Pricing', 'Pricing', 'BASE-PRICING', `Memperbarui master konfigurasi pricing internet`);
     addToast('success', 'Master Pricing internet berhasil disimpan.');
   };
@@ -426,6 +512,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedTiers.sort((a, b) => a.bandwidthMbps - b.bandwidthMbps);
       return { ...prev, bandwidthTiers: updatedTiers };
     });
+    apiService.saveBandwidthTier(tierData).catch(() => {});
     const label = tierData.bandwidthMbps >= 1000 ? `${tierData.bandwidthMbps / 1000} Gbps` : `${tierData.bandwidthMbps} Mbps`;
     logAudit('Updated Bandwidth Tier', 'Pricing', tierData.id, `Menyimpan tarif bandwidth ${label}: Rp ${tierData.price.toLocaleString('id-ID')}`);
     addToast('success', `Tarif internet untuk kapasitas ${label} berhasil disimpan.`);
@@ -436,17 +523,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       bandwidthTiers: (prev.bandwidthTiers || []).filter((t) => t.id !== tierId),
     }));
+    apiService.deleteBandwidthTier(tierId).catch(() => {});
     logAudit('Deleted Bandwidth Tier', 'Pricing', tierId, `Menghapus tarif bandwidth tier ${tierId}`);
     addToast('warning', 'Tarif kapasitas bandwidth telah dihapus.');
   };
 
   const toggleBandwidthTier = (tierId: string) => {
-    setPricingConfig((prev) => ({
-      ...prev,
-      bandwidthTiers: (prev.bandwidthTiers || []).map((t) =>
-        t.id === tierId ? { ...t, isActive: !t.isActive } : t
-      ),
-    }));
+    setPricingConfig((prev) => {
+      const updated = {
+        ...prev,
+        bandwidthTiers: (prev.bandwidthTiers || []).map((t) =>
+          t.id === tierId ? { ...t, isActive: !t.isActive } : t
+        ),
+      };
+      apiService.updatePricing(updated).catch(() => {});
+      return updated;
+    });
   };
 
   // Formula Calculation Config Actions (Admin level)
@@ -458,6 +550,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: new Date().toISOString(),
         updatedBy: currentUser.name || 'Administrator',
       };
+      apiService.updateFormula(updated).catch(() => {});
       return updated;
     });
     logAudit(
@@ -470,11 +563,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetFormulaConfigToDefault = () => {
-    setFormulaConfig({
+    const resetVal = {
       ...DEFAULT_FORMULA_CONFIG,
       updatedAt: new Date().toISOString(),
       updatedBy: currentUser.name || 'Administrator',
-    });
+    };
+    setFormulaConfig(resetVal);
+    apiService.updateFormula(resetVal).catch(() => {});
     logAudit(
       'Reset Formula Config',
       'Pricing',
@@ -489,6 +584,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newId = `MTR-${String(metro.length + 1).padStart(3, '0')}`;
     const newMetro: Metro = { ...metroData, id: newId };
     setMetro((prev) => [...prev, newMetro]);
+    apiService.createMetro(newMetro).catch(() => {});
     logAudit('Created Metro', 'Metro', newId, `Menambahkan metro baru ${newMetro.name} (${newMetro.priceMethod})`);
     addToast('success', `Metro ${newMetro.name} berhasil ditambahkan.`);
   };
@@ -497,6 +593,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMetro((prev) =>
       prev.map((m) => (m.id === id ? { ...m, ...partial } : m))
     );
+    apiService.updateMetro(id, partial).catch(() => {});
     logAudit('Updated Metro', 'Metro', id, `Memperbarui konfigurasi Metro ${id}`);
     addToast('success', `Metro ${id} berhasil diperbarui.`);
   };
@@ -504,6 +601,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteMetro = (id: string) => {
     const target = metro.find((m) => m.id === id);
     setMetro((prev) => prev.filter((m) => m.id !== id));
+    apiService.deleteMetro(id).catch(() => {});
     logAudit('Deleted Metro', 'Metro', id, `Menghapus Metro ${target?.name || id}`);
     addToast('warning', `Metro ${target?.name || id} telah dihapus.`);
   };
@@ -513,6 +611,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newId = `PIP-${String(publicIps.length + 1).padStart(3, '0')}`;
     const newIp: PublicIp = { ...ipData, id: newId };
     setPublicIps((prev) => [...prev, newIp]);
+    apiService.createPublicIp(newIp).catch(() => {});
     logAudit('Created Public IP', 'Public IP', newId, `Menambahkan prefix Public IP ${newIp.prefix}`);
     addToast('success', `Prefix ${newIp.prefix} berhasil ditambahkan.`);
   };
@@ -521,6 +620,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPublicIps((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...partial } : p))
     );
+    apiService.updatePublicIp(id, partial).catch(() => {});
     logAudit('Updated Public IP', 'Public IP', id, `Memperbarui Public IP ${id}`);
     addToast('success', `Public IP ${id} berhasil diperbarui.`);
   };
@@ -528,6 +628,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deletePublicIp = (id: string) => {
     const target = publicIps.find((p) => p.id === id);
     setPublicIps((prev) => prev.filter((p) => p.id !== id));
+    apiService.deletePublicIp(id).catch(() => {});
     logAudit('Deleted Public IP', 'Public IP', id, `Menghapus Public IP prefix ${target?.prefix || id}`);
     addToast('warning', `Prefix Public IP ${target?.prefix || id} dihapus.`);
   };
@@ -545,6 +646,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setServices((prev) => [newService, ...prev]);
+    apiService.createService(newService, createQuotationAlso).catch(() => {});
 
     const cust = customers.find((c) => c.id === serviceData.customerId);
     logAudit('Created Service', 'Service', serviceId, `Membuat layanan baru ${serviceData.bandwidthMbps} Mbps untuk ${cust?.companyName || serviceData.customerId}`);
@@ -579,6 +681,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: new Date().toISOString(),
       };
       setQuotations((prev) => [newQuotation, ...prev]);
+      apiService.createQuotation(newQuotation).catch(() => {});
       logAudit('Created Quotation', 'Quotation', quotationId, `Membuat draft quotation otomatis dari layanan ${serviceId}`);
       addToast('info', `Quotation ${quotationId} otomatis dibuat.`);
     }
@@ -590,6 +693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setServices((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status } : s))
     );
+    apiService.updateServiceStatus(id, status).catch(() => {});
     logAudit('Updated Service', 'Service', id, `Mengubah status layanan ${id} menjadi ${status}`);
     addToast('info', `Status layanan ${id} diubah menjadi ${status}`);
   };
@@ -604,6 +708,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setQuotations((prev) => [newQuote, ...prev]);
+    apiService.createQuotation(newQuote).catch(() => {});
     const cust = customers.find((c) => c.id === quotationData.customerId);
     logAudit('Created Quotation', 'Quotation', newId, `Membuat penawaran harga untuk ${cust?.companyName || quotationData.customerId}`);
     addToast('success', `Quotation ${newId} berhasil dibuat.`);
@@ -614,6 +719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setQuotations((prev) =>
       prev.map((q) => (q.id === id ? { ...q, status } : q))
     );
+    apiService.updateQuotationStatus(id, status).catch(() => {});
     logAudit('Updated Quotation', 'Quotation', id, `Mengubah status Quotation ${id} menjadi ${status}`);
     addToast('info', `Status penawaran ${id} menjadi ${status}`);
   };
@@ -652,6 +758,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInvoices((prev) => [newInvoice, ...prev]);
     // update quotation to Accepted
     updateQuotationStatus(quotationId, 'Accepted');
+    apiService.convertQuotationToInvoice(quotationId, dueDate).catch(() => {});
     logAudit('Generated Invoice', 'Invoice', newInvoiceId, `Menerbitkan Invoice ${newInvoiceId} untuk ${cust?.companyName} berdasarkan Quotation ${quote.id}`);
     addToast('success', `Invoice ${newInvoiceId} berhasil diterbitkan.`);
     return newInvoiceId;
@@ -693,6 +800,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : inv
       )
     );
+
+    apiService.recordPayment(invoiceId, paymentData).catch(() => {});
 
     const cust = customers.find((c) => c.id === targetInvoice.customerId);
     logAudit(
@@ -738,6 +847,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setInvoices((prev) => [newInvoice, ...prev]);
+    apiService.createInvoice(newInvoice).catch(() => {});
     logAudit('Created Invoice', 'Invoice', newId, `Menerbitkan tagihan baru ${newId} periode ${data.billingPeriod}`);
     addToast('success', `Invoice tagihan ${newId} berhasil diterbitkan.`);
     return newId;
@@ -755,18 +865,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: data.status,
     };
     setUsers((prev) => [...prev, newUser]);
+    apiService.createUser(newUser).catch(() => {});
     logAudit('Created User', 'System', newId, `Menambahkan staf pengguna ${data.name} (${data.role})`);
     addToast('success', `Akun staf ${data.name} berhasil dibuat.`);
   };
 
   const updateUser = (id: string, data: any) => {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...data } : u)));
+    apiService.updateUser(id, data).catch(() => {});
     logAudit('Updated User', 'System', id, `Memperbarui data akun staf ${data.name || id}`);
     addToast('success', 'Data staf berhasil diperbarui.');
   };
 
   const deleteUser = (id: string) => {
     setUsers((prev) => prev.filter((u) => u.id !== id));
+    apiService.deleteUser(id).catch(() => {});
     logAudit('Deleted User', 'System', id, `Menghapus akun staf ${id}`);
     addToast('warning', 'Akun staf telah dihapus.');
   };
@@ -780,6 +893,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: newId,
     };
     setWithdrawals((prev) => [newRecord, ...prev]);
+    apiService.createWithdrawal(newRecord).catch(() => {});
     logAudit(
       'Requested Fee Withdrawal',
       'Marketing Fee',
@@ -801,6 +915,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : w
       )
     );
+    apiService.updateWithdrawalStatus(id, status).catch(() => {});
     logAudit(
       'Updated Fee Withdrawal Status',
       'Marketing Fee',

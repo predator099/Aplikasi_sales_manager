@@ -1,18 +1,25 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import cookieParser from "cookie-parser";
+import { apiRouter } from "./src/server/api";
 
 async function startServer() {
   const app = express();
   // PORT is strictly 3000 as required by the reverse proxy architecture (port 8080 is reserved for nginx)
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: "15mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+  app.use(cookieParser());
 
   // Health check endpoints for probes and monitoring
   app.get(["/api/health", "/health", "/_health"], (_req, res) => {
     res.status(200).json({ status: "ok", app: "ANTEN Business Manager" });
   });
+
+  // Mount production API routes
+  app.use("/api", apiRouter);
 
   // Vite middleware for development vs static files for production
   if (process.env.NODE_ENV !== "production") {
