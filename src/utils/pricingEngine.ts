@@ -200,16 +200,54 @@ export const FEE_RULES = {
 export function calculateMarginAllocation(
   bottomPrice: number,
   sellingPrice: number,
-  formula?: CalculationFormulaConfig | null
+  formula?: CalculationFormulaConfig | null,
+  targetUserIdOrName?: string
 ) {
   const safeBottom = Math.max(0, Math.round(Number(bottomPrice) || 0));
   const safeSelling = Math.max(0, Math.round(Number(sellingPrice) || 0));
   const margin = Math.max(0, safeSelling - safeBottom);
 
-  const kantorPct = formula?.kantorPercentage ?? 60;
-  const poolPct = formula?.marketingPoolPercentage ?? 40;
-  const salesPct = formula?.salesPercentageOfPool ?? 75;
-  const amPct = formula?.amPercentageOfPool ?? 25;
+  let kantorPct = formula?.kantorPercentage ?? 60;
+  let poolPct = formula?.marketingPoolPercentage ?? 40;
+  let salesPct = formula?.salesPercentageOfPool ?? 75;
+  let amPct = formula?.amPercentageOfPool ?? 25;
+
+  // Cek apakah ada override persentase khusus per user (Sales / Marketing / AM)
+  if (formula?.userFeeRates && formula.userFeeRates.length > 0) {
+    if (targetUserIdOrName) {
+      const target = targetUserIdOrName.toLowerCase().trim();
+      const userRate = formula.userFeeRates.find(
+        (r) =>
+          r.enabled &&
+          (r.userId.toLowerCase() === target ||
+            r.userName.toLowerCase() === target ||
+            target.includes(r.userName.toLowerCase()) ||
+            r.userName.toLowerCase().includes(target))
+      );
+
+      if (userRate) {
+        if (userRate.userRole === 'Sales') {
+          salesPct = userRate.customPercentage;
+          amPct = Math.max(0, 100 - salesPct);
+        } else if (userRate.userRole === 'Marketing') {
+          poolPct = userRate.customPercentage;
+          kantorPct = Math.max(0, 100 - poolPct);
+        } else if (userRate.userRole === 'AM') {
+          amPct = userRate.customPercentage;
+          salesPct = Math.max(0, 100 - amPct);
+        }
+      }
+    } else {
+      // Jika tidak ada user spesifik, periksa apakah ada pool marketing override yang aktif
+      const marketingOverride = formula.userFeeRates.find(
+        (r) => r.enabled && r.userRole === 'Marketing'
+      );
+      if (marketingOverride) {
+        poolPct = marketingOverride.customPercentage;
+        kantorPct = Math.max(0, 100 - poolPct);
+      }
+    }
+  }
 
   // Check minimum margin threshold if set
   if (formula?.minimumMarginForFee && margin < formula.minimumMarginForFee) {

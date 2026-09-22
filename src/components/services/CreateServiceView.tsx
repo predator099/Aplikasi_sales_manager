@@ -14,19 +14,11 @@ import {
   CheckCircle2,
   AlertCircle,
   ListFilter,
-  Layers,
   ArrowRight,
   ArrowLeft,
-  Eye,
   Check,
-  Sparkles,
-  Building,
-  Users,
-  Briefcase,
-  UserCheck,
 } from 'lucide-react';
-import { PricingAllocation, ServiceItem } from '../../types';
-import { HierarchicalPricingAllocation } from './HierarchicalPricingAllocation';
+import { PricingAllocation } from '../../types';
 
 export const CreateServiceView: React.FC = () => {
   const {
@@ -39,12 +31,15 @@ export const CreateServiceView: React.FC = () => {
     updateServiceStatus,
     setActiveMenu,
     formulaConfig,
+    currentUser,
   } = useApp();
+
+  const isSales = currentUser.role === 'Sales';
 
   // Navigation tabs: 'create' | 'list'
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
-  // Wizard steps: 1 (Config) -> 2 (Hierarchical Allocation) -> 3 (Review & Save)
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  // Wizard steps: 1 (Config) -> 2 (Review & Save)
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 
   // Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
@@ -91,7 +86,6 @@ export const CreateServiceView: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [viewingServiceModal, setViewingServiceModal] = useState<ServiceItem | null>(null);
 
   // Selected entities
   const selectedCustomer = useMemo(() => {
@@ -127,11 +121,13 @@ export const CreateServiceView: React.FC = () => {
     formulaConfig,
   ]);
 
-  // Pricing Allocation State (Hierarchical Fixed Formula)
+  // Pricing Allocation State (Calculated automatically by Formula Engine)
+  const targetSalesPerson = selectedCustomer?.salesName || (currentUser.role === 'Sales' ? currentUser.name : '');
+
   const [pricingAllocation, setPricingAllocation] = useState<PricingAllocation>(() => {
     const selling = calculation.dpp > 0 ? calculation.dpp : 3500000;
     const bottom = Math.round(selling * 0.85);
-    return calculateMarginAllocation(bottom, selling, formulaConfig);
+    return calculateMarginAllocation(bottom, selling, formulaConfig, targetSalesPerson);
   });
 
   // Keep selling price synced when Step 1 calculation updates
@@ -143,10 +139,10 @@ export const CreateServiceView: React.FC = () => {
           newSelling,
           prev.bottomPrice > 0 ? prev.bottomPrice : Math.round(newSelling * 0.85)
         );
-        return calculateMarginAllocation(newBottom, newSelling, formulaConfig);
+        return calculateMarginAllocation(newBottom, newSelling, formulaConfig, targetSalesPerson);
       });
     }
-  }, [calculation.dpp, formulaConfig]);
+  }, [calculation.dpp, formulaConfig, targetSalesPerson]);
 
   const handleSave = (createQuotationAlso = false) => {
     if (!selectedCustomerId) {
@@ -191,6 +187,21 @@ export const CreateServiceView: React.FC = () => {
     }
   };
 
+  const displayedServices = useMemo(() => {
+    if (!isSales) return services;
+    const sName = (currentUser.name || '').toLowerCase();
+    const uName = (currentUser.username || '').toLowerCase();
+    const myCustIds = new Set(
+      customers
+        .filter((c) => {
+          const cSales = (c.salesName || '').toLowerCase();
+          return cSales === sName || cSales === uName;
+        })
+        .map((c) => c.id)
+    );
+    return services.filter((s) => myCustIds.has(s.customerId));
+  }, [services, customers, currentUser, isSales]);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -221,7 +232,7 @@ export const CreateServiceView: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Daftar Layanan Aktif ({services.length})
+            Daftar Layanan Aktif ({displayedServices.length})
           </button>
         </div>
       </div>
@@ -230,7 +241,7 @@ export const CreateServiceView: React.FC = () => {
         <div className="space-y-6">
           {/* Wizard Step Progress Bar */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {/* Step 1 */}
               <button
                 type="button"
@@ -256,7 +267,7 @@ export const CreateServiceView: React.FC = () => {
                 </div>
               </button>
 
-              {/* Step 2: Pembagian Margin / Fee */}
+              {/* Step 2: Review & Simpan */}
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
@@ -274,31 +285,6 @@ export const CreateServiceView: React.FC = () => {
                   }`}
                 >
                   2
-                </div>
-                <div className="hidden sm:block">
-                  <span className="text-xs font-bold block">Pembagian Margin & Fee</span>
-                  <span className="text-[10px] text-slate-400">Hierarki Bertingkat ISP</span>
-                </div>
-              </button>
-
-              {/* Step 3: Review & Simpan */}
-              <button
-                type="button"
-                onClick={() => setCurrentStep(3)}
-                className={`flex items-center gap-2.5 p-2.5 rounded-xl text-left transition-all cursor-pointer ${
-                  currentStep === 3
-                    ? 'bg-teal-50 border border-teal-200 text-teal-900'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
-                    currentStep === 3
-                      ? 'bg-teal-700 text-white'
-                      : 'bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  3
                 </div>
                 <div className="hidden sm:block">
                   <span className="text-xs font-bold block">Review & Finalisasi</span>
@@ -516,7 +502,7 @@ export const CreateServiceView: React.FC = () => {
                     onClick={() => setCurrentStep(2)}
                     className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#0F766E] hover:bg-teal-800 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Lanjut ke Step 2: Pembagian Margin & Fee</span>
+                    <span>Lanjut ke Review & Finalisasi</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -608,47 +594,8 @@ export const CreateServiceView: React.FC = () => {
             </div>
           )}
 
-          {/* STEP 2: PEMBAGIAN MARGIN / FEE (HIERARKI BERTINGKAT) */}
+          {/* STEP 2: REVIEW & FINALISASI */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <HierarchicalPricingAllocation
-                bottomPrice={pricingAllocation.bottomPrice}
-                sellingPrice={pricingAllocation.sellingPrice}
-                onSellingPriceChange={(newPrice) => {
-                  const updated = calculateMarginAllocation(pricingAllocation.bottomPrice, newPrice);
-                  setPricingAllocation(updated);
-                }}
-                allocation={pricingAllocation}
-                onChangeAllocation={(newAlloc) => {
-                  setPricingAllocation(newAlloc);
-                }}
-              />
-
-              {/* Navigation buttons */}
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-xl flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Kembali ke Step 1 (Konfigurasi)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
-                  className="px-5 py-2.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-teal-800 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer"
-                >
-                  <span>Lanjut ke Step 3: Review & Finalisasi</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: REVIEW & FINALISASI */}
-          {currentStep === 3 && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -725,11 +672,11 @@ export const CreateServiceView: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => setCurrentStep(1)}
                     className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-xl flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Kembali Ubah Pembagian Fee</span>
+                    <span>Kembali ke Konfigurasi Layanan</span>
                   </button>
 
                   <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -781,118 +728,68 @@ export const CreateServiceView: React.FC = () => {
                   <th className="py-3 px-4">Pelanggan</th>
                   <th className="py-3 px-4">Bandwidth</th>
                   <th className="py-3 px-4">Total / Bulan</th>
-                  <th className="py-3 px-4">Alokasi Margin</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {services.map((svc) => {
-                  const cust = customers.find((c) => c.id === svc.customerId);
-                  const alloc = svc.pricingAllocation;
+                {displayedServices.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      Belum ada data layanan {isSales ? 'untuk akun Anda' : ''}.
+                    </td>
+                  </tr>
+                ) : (
+                  displayedServices.map((svc) => {
+                    const cust = customers.find((c) => c.id === svc.customerId);
 
-                  return (
-                    <tr key={svc.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-teal-800">
-                        {svc.id}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {cust?.companyName || svc.customerId}
-                      </td>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-800">
-                        {formatBandwidth(svc.bandwidthMbps)}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-teal-700">
-                        {formatRupiah(svc.totalMonthly)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {alloc ? (
-                          <button
-                            onClick={() => setViewingServiceModal(svc)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-900 text-[11px] font-semibold border border-teal-200 cursor-pointer"
+                    return (
+                      <tr key={svc.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-teal-800">
+                          {svc.id}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">
+                          {cust?.companyName || svc.customerId}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800">
+                          {formatBandwidth(svc.bandwidthMbps)}
+                        </td>
+                        <td className="py-3 px-4 font-bold text-teal-700">
+                          {formatRupiah(svc.totalMonthly)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                              svc.status === 'Aktif'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
                           >
-                            <Eye className="w-3.5 h-3.5 text-teal-700" />
-                            <span>Margin: {formatRupiah(alloc.margin)}</span>
-                          </button>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Standar</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                            svc.status === 'Aktif'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
-                        >
-                          {svc.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <select
-                          value={svc.status}
-                          onChange={(e) =>
-                            updateServiceStatus(
-                              svc.id,
-                              e.target.value as 'Aktif' | 'Nonaktif' | 'Suspended'
-                            )
-                          }
-                          className="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
-                        >
-                          <option value="Aktif">Aktif</option>
-                          <option value="Nonaktif">Nonaktif</option>
-                          <option value="Suspended">Suspended</option>
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                })}
+                            {svc.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <select
+                            value={svc.status}
+                            onChange={(e) =>
+                              updateServiceStatus(
+                                svc.id,
+                                e.target.value as 'Aktif' | 'Nonaktif' | 'Suspended'
+                              )
+                            }
+                            className="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
+                          >
+                            <option value="Aktif">Aktif</option>
+                            <option value="Nonaktif">Nonaktif</option>
+                            <option value="Suspended">Suspended</option>
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Detail Alokasi Margin Hierarkis */}
-      {viewingServiceModal && viewingServiceModal.pricingAllocation && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Rincian Hierarki Margin & Fee: {viewingServiceModal.id}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Pelanggan:{' '}
-                  {customers.find((c) => c.id === viewingServiceModal.customerId)?.companyName}
-                </p>
-              </div>
-              <button
-                onClick={() => setViewingServiceModal(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <HierarchicalPricingAllocation
-              bottomPrice={viewingServiceModal.pricingAllocation.bottomPrice}
-              sellingPrice={viewingServiceModal.pricingAllocation.sellingPrice}
-              allocation={viewingServiceModal.pricingAllocation}
-              onChangeAllocation={() => {}}
-              readOnly={true}
-            />
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setViewingServiceModal(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs"
-              >
-                Tutup
-              </button>
-            </div>
           </div>
         </div>
       )}

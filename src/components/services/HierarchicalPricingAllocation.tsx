@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { PricingAllocation } from '../../types';
 import { formatRupiah } from '../../utils/formatters';
 import { calculateMarginAllocation } from '../../utils/pricingEngine';
+import { useApp } from '../../context/AppContext';
 import {
   Users,
   Briefcase,
@@ -28,6 +29,9 @@ export const HierarchicalPricingAllocation: React.FC<HierarchicalPricingAllocati
   onChangeAllocation,
   readOnly = false,
 }) => {
+  const { currentUser } = useApp();
+  const isSales = currentUser.role === 'Sales';
+
   // Always calculate realtime based on fixed formula
   const calculated = calculateMarginAllocation(bottomPrice, sellingPrice);
 
@@ -37,6 +41,94 @@ export const HierarchicalPricingAllocation: React.FC<HierarchicalPricingAllocati
   }, [bottomPrice, sellingPrice]);
 
   const { margin, marketingPool, sales } = calculated;
+
+  // Jika role adalah Sales, sembunyikan semua rumus, HPP/bottom price, dan margin internal
+  if (isSales) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-800 text-xs font-bold flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5" />
+              </span>
+              <h3 className="text-sm font-bold text-slate-900">
+                Harga Jual Layanan & Komisi Sales
+              </h3>
+            </div>
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Komisi Otomatis</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Harga Jual */}
+            <div className="p-4 rounded-xl bg-teal-50/50 border-2 border-teal-400 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-teal-950 block">
+                  Harga Jual Layanan (DPP)
+                </label>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-100 px-1.5 py-0.5 rounded">
+                  {readOnly ? 'Layanan Aktif' : 'Bisa Diedit'}
+                </span>
+              </div>
+              {onSellingPriceChange && !readOnly ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-teal-700 font-mono">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    min={bottomPrice}
+                    step="50000"
+                    value={sellingPrice}
+                    onChange={(e) => onSellingPriceChange(Math.max(0, Number(e.target.value) || 0))}
+                    className="w-full pl-10 pr-3 py-2 text-xs font-bold font-mono border border-teal-400 rounded-lg bg-white text-teal-950 focus:outline-hidden focus:ring-2 focus:ring-teal-600/30 shadow-xs"
+                  />
+                </div>
+              ) : (
+                <div className="p-2.5 bg-white rounded-lg border border-teal-200">
+                  <span className="text-sm font-bold text-teal-900 font-mono">
+                    {formatRupiah(sellingPrice)}
+                  </span>
+                </div>
+              )}
+              <span className="text-[10px] text-teal-800/80 block">
+                Harga penawaran bulanan ke pelanggan sebelum PPN
+              </span>
+            </div>
+
+            {/* Komisi Sales */}
+            <div className="p-4 rounded-xl bg-amber-50/70 border-2 border-amber-300 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold">
+                    <Briefcase className="w-3.5 h-3.5" />
+                  </div>
+                  <label className="text-xs font-bold text-amber-950 block">
+                    Komisi Sales Anda
+                  </label>
+                </div>
+                <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                  Hak Anda
+                </span>
+              </div>
+              <div className="p-2.5 bg-white rounded-lg border border-amber-200 flex items-center justify-between">
+                <span className="text-xs text-amber-800 font-mono font-semibold">Rp</span>
+                <span className="text-base font-extrabold text-amber-950 font-mono">
+                  {sales.amount.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <span className="text-[10px] text-amber-800 block">
+                Komisi langsung dihitung otomatis untuk akun Anda
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">

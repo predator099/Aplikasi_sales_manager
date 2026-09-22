@@ -39,6 +39,42 @@ export const DEFAULT_FORMULA_CONFIG: CalculationFormulaConfig = {
   enableSalesBonus: false,
   bonusThresholdMargin: 5000000,
   salesBonusPercentage: 5,
+
+  // Penyesuaian Persentase Khusus Per User (Sales / Marketing / AM)
+  userFeeRates: [
+    {
+      userId: 'USR-003',
+      userName: 'Rian Pratama',
+      userRole: 'Sales',
+      customPercentage: 75,
+      enabled: false,
+      notes: 'Standar formula closing sales (75% dari Pool)',
+    },
+    {
+      userId: 'USR-007',
+      userName: 'Dewi Lestari',
+      userRole: 'Sales',
+      customPercentage: 80,
+      enabled: true,
+      notes: 'Sales Senior - Target khusus 80% dari Pool',
+    },
+    {
+      userId: 'USR-002',
+      userName: 'Maya Marketing',
+      userRole: 'Marketing',
+      customPercentage: 40,
+      enabled: false,
+      notes: 'Standar alokasi Pool Marketing (40% dari Margin)',
+    },
+    {
+      userId: 'USR-006',
+      userName: 'Hendra Kusuma',
+      userRole: 'AM',
+      customPercentage: 25,
+      enabled: false,
+      notes: 'Standar Account Manager (25% dari Pool)',
+    },
+  ],
 };
 
 export const INITIAL_PRICING: PricingConfig = {
@@ -617,6 +653,26 @@ export const INITIAL_USERS: SystemUser[] = [
     password: 'finance123',
     role: 'Finance',
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    status: 'Aktif',
+  },
+  {
+    id: 'USR-006',
+    name: 'Hendra Kusuma',
+    username: 'hendra_am',
+    email: 'am@anten.net.id',
+    password: 'am123',
+    role: 'AM',
+    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+    status: 'Aktif',
+  },
+  {
+    id: 'USR-007',
+    name: 'Dewi Lestari',
+    username: 'dewi_sales',
+    email: 'dewi.sales@anten.net.id',
+    password: 'sales123',
+    role: 'Sales',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
     status: 'Aktif',
   },
 ];

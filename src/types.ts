@@ -100,6 +100,15 @@ export type MetroFormulaMethod =
 
 export type MetroRoundingRule = 'none' | 'round_thousand' | 'round_hundred_thousand';
 
+export interface UserFeeRate {
+  userId: string;
+  userName: string;
+  userRole: 'Sales' | 'Marketing' | 'AM' | string;
+  customPercentage: number; // e.g. 80% for Sales, 45% for Marketing Pool, 30% for AM
+  enabled: boolean; // whether custom override is active
+  notes?: string;
+}
+
 export interface CalculationFormulaConfig {
   id: string;
   updatedAt: string;
@@ -118,7 +127,7 @@ export interface CalculationFormulaConfig {
   metroRoundingRule: MetroRoundingRule;
   metroMinimumPrice: number;          // tarif minimum metro per bulan
 
-  // Rumus Fee Sales & Marketing Allocation
+  // Rumus Fee Sales & Marketing Allocation (Standar Global)
   kantorPercentage: number;           // default 60 (%)
   marketingPoolPercentage: number;    // default 40 (%)
   salesPercentageOfPool: number;      // default 75 (%)
@@ -127,6 +136,9 @@ export interface CalculationFormulaConfig {
   enableSalesBonus: boolean;          // default false
   bonusThresholdMargin: number;       // default 5000000
   salesBonusPercentage: number;       // default 5 (%)
+
+  // Penyesuaian Persentase Khusus Per User (Sales / Marketing / AM)
+  userFeeRates?: UserFeeRate[];
 }
 
 export interface FeeWithdrawalRecord {

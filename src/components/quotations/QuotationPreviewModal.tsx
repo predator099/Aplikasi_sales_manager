@@ -29,7 +29,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
   onConvertToInvoice,
   onStatusChange,
 }) => {
-  const { customers, metro, publicIps } = useApp();
+  const { customers, metro, publicIps, currentUser } = useApp();
 
   if (!quotation) return null;
 
@@ -248,8 +248,8 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Internal Margin & Fee Allocation Breakdown (Internal Reference, Print Hidden) */}
-          {quotation.pricingAllocation && (
+          {/* Internal Margin & Fee Allocation Breakdown (Internal Reference, Hidden for Sales & Print) */}
+          {quotation.pricingAllocation && currentUser.role !== 'Sales' && (
             <div className="mt-8 p-4 bg-slate-900 text-white rounded-xl border border-slate-800 text-xs space-y-3 print:hidden">
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px]">
