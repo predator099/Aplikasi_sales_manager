@@ -6,35 +6,23 @@ import {
   MetroRoundingRule,
   UserFeeRate,
 } from '../../types';
-import { formatRupiah, formatBandwidth, formatDate } from '../../utils/formatters';
+import { formatRupiah } from '../../utils/formatters';
 import { calculatePricing, calculateMarginAllocation } from '../../utils/pricingEngine';
 import {
-  Calculator,
-  Sliders,
-  CheckCircle2,
-  AlertTriangle,
   RotateCcw,
   Save,
-  ShieldCheck,
   Building,
   Users,
   Briefcase,
   UserCheck,
   Network,
-  Layers,
-  ArrowRight,
-  TrendingUp,
-  Percent,
-  Cpu,
-  Info,
-  Check,
   Zap,
-  Plus,
+  CheckCircle2,
+  AlertTriangle,
   Trash2,
-  Edit3,
   UserPlus,
-  Sparkles,
   X,
+  Check,
 } from 'lucide-react';
 
 export const FormulaSettingsView: React.FC = () => {
@@ -45,8 +33,6 @@ export const FormulaSettingsView: React.FC = () => {
     pricingConfig,
     metro,
     publicIps,
-    currentUser,
-    setActiveMenu,
     users,
   } = useApp();
 
@@ -63,7 +49,7 @@ export const FormulaSettingsView: React.FC = () => {
   const [isAddingUserRate, setIsAddingUserRate] = useState<boolean>(false);
   const [newUserId, setNewUserId] = useState<string>('');
   const [newUserName, setNewUserName] = useState<string>('');
-  const [newUserRole, setNewUserRole] = useState<'Sales' | 'Marketing' | 'Account Manager' | 'Staff'>('Sales');
+  const [newUserRole, setNewUserRole] = useState<'Sales' | 'Marketing' | 'AM' | 'Staff'>('Sales');
   const [newUserPct, setNewUserPct] = useState<number>(80);
   const [newUserNotes, setNewUserNotes] = useState<string>('');
 
@@ -114,13 +100,13 @@ export const FormulaSettingsView: React.FC = () => {
   const handleSave = () => {
     if (!isFormValid) return;
     updateFormulaConfig(draft);
-    setSaveSuccessMessage('Rumus perhitungan berhasil disimpan dan aktif di seluruh sistem!');
-    setTimeout(() => setSaveSuccessMessage(null), 4000);
+    setSaveSuccessMessage('Perubahan rumus perhitungan berhasil disimpan.');
+    setTimeout(() => setSaveSuccessMessage(null), 3500);
   };
 
   // Handle Reset to Default
   const handleReset = () => {
-    if (window.confirm('Kembalikan seluruh rumus perhitungan ke standar default ISP (60:40 dan 75:25)?')) {
+    if (window.confirm('Kembalikan seluruh rumus perhitungan ke konfigurasi standar bawaan?')) {
       resetFormulaConfigToDefault();
       setDraft({
         ...formulaConfig,
@@ -142,42 +128,38 @@ export const FormulaSettingsView: React.FC = () => {
             userId: 'USR-001',
             userName: 'Ahmad Fauzi',
             userRole: 'Sales',
-            customFeePercentageOfPool: 80,
-            customMarginPercentage: 32,
-            isActive: true,
+            customPercentage: 80,
+            enabled: true,
             notes: 'Senior Sales Executive - Top Performer',
           },
           {
             userId: 'USR-004',
             userName: 'Rina Kusuma',
             userRole: 'Marketing',
-            customFeePercentageOfPool: 75,
-            customMarginPercentage: 30,
-            isActive: true,
+            customPercentage: 75,
+            enabled: true,
             notes: 'Senior Marketing Lead',
           },
           {
             userId: 'USR-006',
             userName: 'Dian Permata',
-            userRole: 'Account Manager',
-            customFeePercentageOfPool: 30,
-            customMarginPercentage: 12,
-            isActive: true,
+            userRole: 'AM',
+            customPercentage: 30,
+            enabled: true,
             notes: 'Key Account Manager',
           },
           {
             userId: 'USR-007',
             userName: 'Budi Hartono',
             userRole: 'Sales',
-            customFeePercentageOfPool: 70,
-            customMarginPercentage: 28,
-            isActive: true,
+            customPercentage: 70,
+            enabled: true,
             notes: 'Junior Sales Representative',
           },
         ],
       });
-      setSaveSuccessMessage('Rumus telah dikembalikan ke standar awal.');
-      setTimeout(() => setSaveSuccessMessage(null), 4000);
+      setSaveSuccessMessage('Rumus telah dikembalikan ke standar bawaan.');
+      setTimeout(() => setSaveSuccessMessage(null), 3500);
     }
   };
 
@@ -188,8 +170,8 @@ export const FormulaSettingsView: React.FC = () => {
       userId: newUserId || `USR-CUSTOM-${Date.now().toString().slice(-4)}`,
       userName: newUserName.trim(),
       userRole: newUserRole,
-      customFeePercentageOfPool: Number(newUserPct) || 75,
-      isActive: true,
+      customPercentage: Number(newUserPct) || 75,
+      enabled: true,
       notes: newUserNotes.trim() || undefined,
     };
     const currentRates = draft.userFeeRates || [];
@@ -224,7 +206,7 @@ export const FormulaSettingsView: React.FC = () => {
     updateDraft({ userFeeRates: list });
   };
 
-  // Calculate effective percentages against total margin
+  // Effective percentages of gross margin
   const effectiveSalesOfMargin = ((draft.marketingPoolPercentage * draft.salesPercentageOfPool) / 100).toFixed(1);
   const effectiveAmOfMargin = ((draft.marketingPoolPercentage * draft.amPercentageOfPool) / 100).toFixed(1);
 
@@ -234,14 +216,13 @@ export const FormulaSettingsView: React.FC = () => {
   const [simBandwidth, setSimBandwidth] = useState<number>(300);
   const [simMetroId, setSimMetroId] = useState<string>(metro[0]?.id || '');
   const [simDiscountPct, setSimDiscountPct] = useState<number>(0);
-  const [simBottomRatio, setSimBottomRatio] = useState<number>(75); // Bottom price as % of DPP
-  const [simTargetUser, setSimTargetUser] = useState<string>(''); // Optional test personil
+  const [simBottomRatio, setSimBottomRatio] = useState<number>(75);
+  const [simTargetUser, setSimTargetUser] = useState<string>('');
 
   const selectedSimMetro = useMemo(() => {
     return metro.find((m) => m.id === simMetroId) || metro[0] || null;
   }, [metro, simMetroId]);
 
-  // Pricing calculation in simulator using the CURRENT DRAFT FORMULA
   const simPricing = useMemo(() => {
     return calculatePricing({
       bandwidthMbps: simBandwidth,
@@ -257,129 +238,71 @@ export const FormulaSettingsView: React.FC = () => {
   const simSellingPrice = simPricing.dpp;
   const simBottomPrice = Math.round(simSellingPrice * (simBottomRatio / 100));
 
-  // Margin allocation in simulator using CURRENT DRAFT FORMULA and optional target user
   const simAllocation = useMemo(() => {
     return calculateMarginAllocation(simBottomPrice, simSellingPrice, draft, simTargetUser || undefined);
   }, [simBottomPrice, simSellingPrice, draft, simTargetUser]);
 
-  // Formula settings is accessible to management, admin, finance, and sales
-  // isAuthorized is kept true so users can open and simulate formulas smoothly
-  const isAuthorized = true;
-
-  if (!isAuthorized) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-bold text-slate-900">Akses Terbatas Administrator</h2>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          Menu pengaturan rumus perhitungan internet metro dan fee sales hanya dapat diakses oleh
-          pengguna dengan peran <strong>Administrator</strong> atau <strong>Super Admin</strong>.
-          Peran Anda saat ini adalah: <span className="font-semibold text-slate-700">{currentUser.role}</span>.
-        </p>
-        <button
-          onClick={() => setActiveMenu('dashboard')}
-          className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
-        >
-          Kembali ke Dashboard
-        </button>
-      </div>
-    );
-  }
+  const isTargetUserCustom = Boolean(
+    simTargetUser &&
+    draft.userFeeRates?.some((u) => u.enabled && (u.userId === simTargetUser || u.userName === simTargetUser))
+  );
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
-      {/* Page Header */}
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-slate-900 tracking-tight">
-              Rumus Tarif & Fee
-            </h1>
-            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-              Konfigurasi Sistem
-            </span>
-          </div>
-        </div>
+        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+          Rumus Tarif & Fee
+        </h1>
 
-        {/* Global Action Buttons */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
-            title="Kembalikan semua nilai rumus ke standar bawaan"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">Reset</span>
+            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+            <span>Reset Standar</span>
           </button>
 
           <button
             type="button"
             disabled={!isFormValid || !isModified}
             onClick={handleSave}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white rounded-lg shadow-2xs transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
               !isFormValid || !isModified
-                ? 'bg-slate-300 cursor-not-allowed opacity-70'
-                : 'bg-slate-900 hover:bg-slate-800'
+                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                : 'bg-teal-700 hover:bg-teal-800 text-white'
             }`}
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Simpan</span>
+            <span>Simpan Perubahan</span>
           </button>
         </div>
       </div>
 
-      {/* Admin Audit & Status Banner */}
-      <div className="bg-slate-900 text-slate-100 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30 flex-shrink-0">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">
-                Formula Aktif: {formulaConfig.id}
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              <span className="text-[11px] text-emerald-300 font-medium">Terverifikasi ISP Core</span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Terakhir diperbarui oleh <span className="text-slate-200 font-semibold">{formulaConfig.updatedBy}</span> pada {formatDate(formulaConfig.updatedAt)}.
-            </p>
-          </div>
-        </div>
-
-        {isModified && (
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold self-start sm:self-auto">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            Ada Perubahan Belum Disimpan
-          </div>
-        )}
-      </div>
-
+      {/* Success Notification */}
       {saveSuccessMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 animate-in fade-in">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span className="font-semibold">{saveSuccessMessage}</span>
+          <span className="font-medium">{saveSuccessMessage}</span>
         </div>
       )}
 
-      {/* Main Tabs Navigation */}
-      <div className="flex border-b border-slate-200 bg-white rounded-t-xl px-2 pt-2">
+      {/* Clean Segmented Tabs */}
+      <div className="flex border-b border-slate-200 text-xs font-semibold">
         <button
           type="button"
           onClick={() => setActiveTab('fees')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 pb-3 px-4 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'fees'
-              ? 'border-teal-700 text-teal-900 bg-teal-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              ? 'border-teal-700 text-teal-800 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>1. Rumus Fee Sales & Marketing</span>
-          <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 text-slate-600 font-mono">
+          <span>Alokasi Fee Margin</span>
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
             {draft.kantorPercentage}:{draft.marketingPoolPercentage}
           </span>
         </button>
@@ -387,231 +310,220 @@ export const FormulaSettingsView: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('metro')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 pb-3 px-4 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'metro'
-              ? 'border-teal-700 text-teal-900 bg-teal-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              ? 'border-teal-700 text-teal-800 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <Network className="w-4 h-4" />
-          <span>2. Rumus Internet & Metro Ethernet</span>
-          <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 text-slate-600 font-mono">
-            {draft.metroCalculationMethod === 'proportional_capacity' ? 'Proporsional' : draft.metroCalculationMethod}
-          </span>
+          <span>Tarif Metro & Internet</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('simulator')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 pb-3 px-4 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'simulator'
-              ? 'border-teal-700 text-teal-900 bg-teal-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              ? 'border-teal-700 text-teal-800 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <Zap className="w-4 h-4" />
-          <span>3. Simulator & Uji Rumus Live</span>
-          <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-100 text-teal-800 font-semibold">
-            Live Preview
-          </span>
+          <span>Simulator Live</span>
         </button>
       </div>
 
       {/* ===================================================================== */}
-      {/* TAB 1: RUMUS FEE SALES & MARKETING                                    */}
+      {/* TAB 1: ALOKASI FEE MARGIN                                             */}
       {/* ===================================================================== */}
       {activeTab === 'fees' && (
         <div className="space-y-6">
-          {/* Level 1 Allocation: Kantor vs Pool */}
-          <div className="bg-white p-6 rounded-b-xl rounded-t-none border border-t-0 border-slate-200 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-800 text-xs font-bold flex items-center justify-center">
-                    1
-                  </span>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Alokasi Level 1: Gross Margin ISP (Kantor vs Pool Marketing)
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-500 mt-1 pl-8">
-                  Rumus penentuan pembagian dari selisih Harga Jual (DPP) dikurangi Harga Bottom. Total persentase Kantor dan Marketing Pool harus tepat 100%.
-                </p>
-              </div>
-
-              {!isLevel1Valid ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Total {level1Sum}% (Harus 100%)</span>
-                  <button
-                    type="button"
-                    onClick={() => autoBalanceLevel1('pool')}
-                    className="ml-2 underline font-bold hover:text-rose-900"
-                  >
-                    Seimbangkan
-                  </button>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-lg">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Total Valid 100%</span>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Kantor ISP Portion */}
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-slate-700" />
-                    <label htmlFor="kantorPercentage" className="text-xs font-bold text-slate-900">
-                      Porsi Kantor ISP
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <input
-                      id="kantorPercentage"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={draft.kantorPercentage}
-                      onChange={(e) => {
-                        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                        updateDraft({
-                          kantorPercentage: val,
-                          marketingPoolPercentage: 100 - val,
-                        });
-                      }}
-                      className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded-md bg-white"
-                    />
-                    <span className="text-xs font-bold text-slate-600">%</span>
-                  </div>
-                </div>
-
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={draft.kantorPercentage}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    updateDraft({
-                      kantorPercentage: val,
-                      marketingPoolPercentage: 100 - val,
-                    });
-                  }}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
-                />
-
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Porsi margin kotor yang masuk ke kas operasional dan laba perusahaan ISP. Standar rekomendasi: <strong>60%</strong>.
-                </p>
-              </div>
-
-              {/* Marketing Pool Portion */}
-              <div className="p-4 rounded-xl border border-teal-200 bg-teal-50/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-teal-700" />
-                    <label htmlFor="marketingPoolPercentage" className="text-xs font-bold text-teal-950">
-                      Porsi Pool Marketing
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <input
-                      id="marketingPoolPercentage"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={draft.marketingPoolPercentage}
-                      onChange={(e) => {
-                        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                        updateDraft({
-                          marketingPoolPercentage: val,
-                          kantorPercentage: 100 - val,
-                        });
-                      }}
-                      className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-teal-300 rounded-md bg-white"
-                    />
-                    <span className="text-xs font-bold text-teal-800">%</span>
-                  </div>
-                </div>
-
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={draft.marketingPoolPercentage}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    updateDraft({
-                      marketingPoolPercentage: val,
-                      kantorPercentage: 100 - val,
-                    });
-                  }}
-                  className="w-full h-2 bg-teal-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
-                />
-
-                <p className="text-[11px] text-teal-700 leading-relaxed">
-                  Total anggaran insentif pemasaran yang dialokasikan untuk dibagikan ke tim lapangan (Sales + AM). Standar rekomendasi: <strong>40%</strong>.
-                </p>
-              </div>
-            </div>
-
-            {/* Level 2 Allocation: Sales vs AM within Pool */}
-            <div className="pt-6 border-t border-slate-100">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-800 text-xs font-bold flex items-center justify-center">
-                      2
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Alokasi Level 2: Pembagian Pool Marketing (Sales Closing vs AM Retensi)
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 pl-8">
-                    Membagi 100% dari Pool Marketing antara Sales (yang berhasil closing) dan Account Manager (yang mengelola hubungan pelanggan).
-                  </p>
-                </div>
-
-                {!isLevel2Valid ? (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+          {/* Main Card: Margin & Pool Splits */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-6">
+            {/* Level 1: Kantor vs Pool */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-900">
+                  1. Alokasi Gross Margin: Kantor ISP vs Pool Marketing
+                </span>
+                {!isLevel1Valid ? (
+                  <div className="flex items-center gap-1.5 text-rose-600 font-medium text-[11px]">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Total {level2Sum}% (Harus 100%)</span>
+                    <span>Total {level1Sum}% (Harus 100%)</span>
                     <button
                       type="button"
-                      onClick={() => autoBalanceLevel2('sales')}
-                      className="ml-2 underline font-bold hover:text-rose-900"
+                      onClick={() => autoBalanceLevel1('pool')}
+                      className="underline font-bold hover:text-rose-800 cursor-pointer ml-1"
                     >
                       Seimbangkan
                     </button>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-lg">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Total Valid 100%</span>
-                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                    <Check className="w-3.5 h-3.5" />
+                    100% Seimbang
+                  </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Sales Portion */}
-                <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+              {/* Progress Bar */}
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                <div
+                  style={{ width: `${Math.min(100, draft.kantorPercentage)}%` }}
+                  className="bg-slate-800 transition-all duration-150"
+                />
+                <div
+                  style={{ width: `${Math.min(100, draft.marketingPoolPercentage)}%` }}
+                  className="bg-teal-600 transition-all duration-150"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Kantor Box */}
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-slate-700" />
-                      <div>
-                        <label htmlFor="salesPercentageOfPool" className="text-xs font-bold text-slate-900 block">
-                          Porsi Sales Closing
+                      <Building className="w-4 h-4 text-slate-700" />
+                      <label htmlFor="kantorPercentage" className="text-xs font-semibold text-slate-800">
+                        Kantor ISP
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        id="kantorPercentage"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={draft.kantorPercentage}
+                        onChange={(e) => {
+                          const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                          updateDraft({
+                            kantorPercentage: val,
+                            marketingPoolPercentage: 100 - val,
+                          });
+                        }}
+                        className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded bg-white"
+                      />
+                      <span className="text-xs font-bold text-slate-500">%</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={draft.kantorPercentage}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      updateDraft({
+                        kantorPercentage: val,
+                        marketingPoolPercentage: 100 - val,
+                      });
+                    }}
+                    className="w-full h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-slate-800"
+                  />
+                </div>
+
+                {/* Pool Marketing Box */}
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-teal-700" />
+                      <label htmlFor="marketingPoolPercentage" className="text-xs font-semibold text-slate-800">
+                        Pool Marketing
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        id="marketingPoolPercentage"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={draft.marketingPoolPercentage}
+                        onChange={(e) => {
+                          const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                          updateDraft({
+                            marketingPoolPercentage: val,
+                            kantorPercentage: 100 - val,
+                          });
+                        }}
+                        className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded bg-white"
+                      />
+                      <span className="text-xs font-bold text-slate-500">%</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={draft.marketingPoolPercentage}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      updateDraft({
+                        marketingPoolPercentage: val,
+                        kantorPercentage: 100 - val,
+                      });
+                    }}
+                    className="w-full h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-teal-700"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100" />
+
+            {/* Level 2: Sales vs AM */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-900">
+                  2. Pembagian Pool Marketing: Sales vs Account Manager (AM)
+                </span>
+                {!isLevel2Valid ? (
+                  <div className="flex items-center gap-1.5 text-rose-600 font-medium text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Total {level2Sum}% (Harus 100%)</span>
+                    <button
+                      type="button"
+                      onClick={() => autoBalanceLevel2('sales')}
+                      className="underline font-bold hover:text-rose-800 cursor-pointer ml-1"
+                    >
+                      Seimbangkan
+                    </button>
+                  </div>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                    <Check className="w-3.5 h-3.5" />
+                    100% Seimbang
+                  </span>
+                )}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                <div
+                  style={{ width: `${Math.min(100, draft.salesPercentageOfPool)}%` }}
+                  className="bg-teal-700 transition-all duration-150"
+                />
+                <div
+                  style={{ width: `${Math.min(100, draft.amPercentageOfPool)}%` }}
+                  className="bg-purple-600 transition-all duration-150"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Sales Box */}
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-teal-700" />
+                        <label htmlFor="salesPercentageOfPool" className="text-xs font-semibold text-slate-800">
+                          Sales Closing
                         </label>
-                        <span className="text-[10px] text-teal-700 font-semibold">
-                          Efektif: {effectiveSalesOfMargin}% dari Total Margin
-                        </span>
                       </div>
+                      <span className="text-[10px] text-teal-700 font-medium pl-6 block">
+                        Efektif {effectiveSalesOfMargin}% Margin Kotor
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <input
@@ -627,17 +539,15 @@ export const FormulaSettingsView: React.FC = () => {
                             amPercentageOfPool: 100 - val,
                           });
                         }}
-                        className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded-md bg-white"
+                        className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded bg-white"
                       />
-                      <span className="text-xs font-bold text-slate-600">%</span>
+                      <span className="text-xs font-bold text-slate-500">%</span>
                     </div>
                   </div>
-
                   <input
                     type="range"
                     min="0"
                     max="100"
-                    step="1"
                     value={draft.salesPercentageOfPool}
                     onChange={(e) => {
                       const val = Number(e.target.value);
@@ -646,27 +556,23 @@ export const FormulaSettingsView: React.FC = () => {
                         amPercentageOfPool: 100 - val,
                       });
                     }}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0F766E]"
+                    className="w-full h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-teal-700"
                   />
-
-                  <p className="text-[11px] text-slate-500">
-                    Diterima oleh personil Sales saat akuisisi layanan baru. Standar default: <strong>75%</strong> dari Pool (= 30% dari Total Margin).
-                  </p>
                 </div>
 
-                {/* AM Portion */}
-                <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30 space-y-3">
+                {/* AM Box */}
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="w-4 h-4 text-purple-700" />
-                      <div>
-                        <label htmlFor="amPercentageOfPool" className="text-xs font-bold text-purple-950 block">
-                          Porsi Account Manager (AM)
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-purple-700" />
+                        <label htmlFor="amPercentageOfPool" className="text-xs font-semibold text-slate-800">
+                          Account Manager (AM)
                         </label>
-                        <span className="text-[10px] text-purple-700 font-semibold">
-                          Efektif: {effectiveAmOfMargin}% dari Total Margin
-                        </span>
                       </div>
+                      <span className="text-[10px] text-purple-700 font-medium pl-6 block">
+                        Efektif {effectiveAmOfMargin}% Margin Kotor
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <input
@@ -682,17 +588,15 @@ export const FormulaSettingsView: React.FC = () => {
                             salesPercentageOfPool: 100 - val,
                           });
                         }}
-                        className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-purple-300 rounded-md bg-white"
+                        className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded bg-white"
                       />
-                      <span className="text-xs font-bold text-purple-800">%</span>
+                      <span className="text-xs font-bold text-slate-500">%</span>
                     </div>
                   </div>
-
                   <input
                     type="range"
                     min="0"
                     max="100"
-                    step="1"
                     value={draft.amPercentageOfPool}
                     onChange={(e) => {
                       const val = Number(e.target.value);
@@ -701,601 +605,495 @@ export const FormulaSettingsView: React.FC = () => {
                         salesPercentageOfPool: 100 - val,
                       });
                     }}
-                    className="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-700"
+                    className="w-full h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-purple-700"
                   />
-
-                  <p className="text-[11px] text-purple-700">
-                    Diterima oleh AM sebagai insentif pemeliharaan akun pelanggan. Standar default: <strong>25%</strong> dari Pool (= 10% dari Total Margin).
-                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Special Conditions: Minimum Margin & Sales Bonus */}
-            <div className="pt-6 border-t border-slate-100 space-y-4">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Kebijakan Tambahan & Batasan Margin
-              </h4>
+            <div className="border-t border-slate-100" />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
-                  <label htmlFor="minimumMarginForFee" className="text-xs font-bold text-slate-800 block">
-                    Ambang Batas Margin Minimum untuk Fee (Rp)
+            {/* Threshold & Bonus */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-1.5">
+                <label htmlFor="minimumMarginForFee" className="font-semibold text-slate-800 block">
+                  Batas Minimum Margin untuk Fee (Rp)
+                </label>
+                <input
+                  id="minimumMarginForFee"
+                  type="number"
+                  min="0"
+                  step="50000"
+                  value={draft.minimumMarginForFee}
+                  onChange={(e) => updateDraft({ minimumMarginForFee: Number(e.target.value) || 0 })}
+                  placeholder="0 (Tanpa batasan)"
+                  className="w-full px-3 py-1.5 font-mono border border-slate-300 rounded-lg bg-white"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="enableSalesBonus" className="font-semibold text-slate-800">
+                    Bonus Ekstra High-Margin
                   </label>
                   <input
-                    id="minimumMarginForFee"
-                    type="number"
-                    min="0"
-                    step="50000"
-                    value={draft.minimumMarginForFee}
-                    onChange={(e) => updateDraft({ minimumMarginForFee: Number(e.target.value) || 0 })}
-                    placeholder="0 (Tanpa batasan minimum)"
-                    className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg"
+                    id="enableSalesBonus"
+                    type="checkbox"
+                    checked={draft.enableSalesBonus}
+                    onChange={(e) => updateDraft({ enableSalesBonus: e.target.checked })}
+                    className="w-4 h-4 rounded text-teal-700 focus:ring-teal-600 accent-teal-700 cursor-pointer"
                   />
-                  <p className="text-[11px] text-slate-500">
-                    Jika margin kotor di bawah nominal ini, komisi sales/pool tidak dicairkan (100% dialihkan ke kantor).
-                  </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="enableSalesBonus" className="text-xs font-bold text-slate-800">
-                      Extra Bonus Sales High-Margin
-                    </label>
+                {draft.enableSalesBonus && (
+                  <div className="grid grid-cols-2 gap-2 pt-0.5">
                     <input
-                      id="enableSalesBonus"
-                      type="checkbox"
-                      checked={draft.enableSalesBonus}
-                      onChange={(e) => updateDraft({ enableSalesBonus: e.target.checked })}
-                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500"
+                      type="number"
+                      placeholder="Target Margin (Rp)"
+                      value={draft.bonusThresholdMargin}
+                      onChange={(e) => updateDraft({ bonusThresholdMargin: Number(e.target.value) || 0 })}
+                      className="w-full px-2.5 py-1.5 font-mono border border-slate-300 rounded-lg bg-white text-xs"
                     />
-                  </div>
-
-                  {draft.enableSalesBonus ? (
-                    <div className="space-y-2 pt-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-500 w-24">Target Margin:</span>
-                        <input
-                          type="number"
-                          value={draft.bonusThresholdMargin}
-                          onChange={(e) => updateDraft({ bonusThresholdMargin: Number(e.target.value) || 0 })}
-                          className="flex-1 px-2 py-1 text-xs font-mono border border-slate-300 rounded"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-500 w-24">Extra Bonus:</span>
-                        <input
-                          type="number"
-                          value={draft.salesBonusPercentage}
-                          onChange={(e) => updateDraft({ salesBonusPercentage: Number(e.target.value) || 0 })}
-                          className="w-20 px-2 py-1 text-xs font-mono border border-slate-300 rounded"
-                        />
-                        <span className="text-xs font-bold text-slate-600">%</span>
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        placeholder="Bonus %"
+                        value={draft.salesBonusPercentage}
+                        onChange={(e) => updateDraft({ salesBonusPercentage: Number(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 font-mono border border-slate-300 rounded-lg bg-white text-xs"
+                      />
+                      <span className="text-slate-500 font-bold">%</span>
                     </div>
-                  ) : (
-                    <p className="text-[11px] text-slate-400">
-                      Aktifkan jika sales berhak atas bonus tambahan saat margin melampaui target tertentu.
-                    </p>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Bagian 3: Penyesuaian Persentase Fee Khusus Per Personil */}
-            <div className="pt-6 border-t border-slate-100 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-teal-700" />
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                      Penyesuaian Persentase Fee Khusus Per Personil (Marketing & Sales)
-                    </h4>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
-                      {(draft.userFeeRates || []).length} Personil Terdaftar
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Atur persentase fee komisi khusus untuk personil tertentu (misal: Marketing A 80%, Sales B 70%). Sistem otomatis memprioritaskan persentase individu ini saat penerbitan layanan dan pencairan fee.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddingUserRate(!isAddingUserRate)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded-lg shadow-2xs transition-colors self-start sm:self-auto cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Tambah Personil</span>
-                </button>
+          {/* Section: Tarif Personil Override */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Tarif Fee Khusus Personil
+                </h2>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                  {(draft.userFeeRates || []).length} Personil
+                </span>
               </div>
 
-              {/* Form Tambah Personil */}
-              {isAddingUserRate && (
-                <div className="p-4 bg-slate-50 border border-teal-200 rounded-xl space-y-4 animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                      Tambah Penyesuaian Fee Personil Baru
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingUserRate(false)}
-                      className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              <button
+                type="button"
+                onClick={() => setIsAddingUserRate(!isAddingUserRate)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Tambah Personil</span>
+              </button>
+            </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Pilih Personil / Akun
-                      </label>
-                      <select
-                        value={newUserId}
-                        onChange={(e) => {
-                          const selectedId = e.target.value;
-                          setNewUserId(selectedId);
-                          const foundUser = users.find((u) => u.id === selectedId);
-                          if (foundUser) {
-                            setNewUserName(foundUser.name);
-                            if (['Sales', 'Marketing', 'Account Manager'].includes(foundUser.role)) {
-                              setNewUserRole(foundUser.role as any);
-                            }
+            {/* Add User Form */}
+            {isAddingUserRate && (
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-700 block mb-1">
+                      Pilih User Sistem
+                    </label>
+                    <select
+                      value={newUserId}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        setNewUserId(selectedId);
+                        const foundUser = users.find((u) => u.id === selectedId);
+                        if (foundUser) {
+                          setNewUserName(foundUser.name);
+                          if (['Sales', 'Marketing', 'AM'].includes(foundUser.role)) {
+                            setNewUserRole(foundUser.role as any);
                           }
-                        }}
-                        className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
-                      >
-                        <option value="">-- Pilih dari User Terdaftar --</option>
-                        {users.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} ({u.role})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Nama Personil
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: Sales A / Marketing A"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Peran / Jabatan
-                      </label>
-                      <select
-                        value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value as any)}
-                        className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
-                      >
-                        <option value="Sales">Sales</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Account Manager">Account Manager</option>
-                        <option value="Staff">Staff</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-bold text-slate-700">
-                          Fee Khusus (% Pool)
-                        </label>
-                        <span className="text-[10px] text-teal-700 font-bold">
-                          {((draft.marketingPoolPercentage * (Number(newUserPct) || 0)) / 100).toFixed(1)}% Total
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={newUserPct}
-                          onChange={(e) => setNewUserPct(Number(e.target.value) || 0)}
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold border border-slate-300 rounded-lg bg-white"
-                        />
-                        <span className="text-xs font-bold text-slate-600">%</span>
-                      </div>
-                    </div>
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs"
+                    >
+                      <option value="">-- Manual / Pilih User --</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.role})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      Catatan / Keterangan Penyesuaian
+                    <label className="text-[11px] font-medium text-slate-700 block mb-1">
+                      Nama Personil
                     </label>
                     <input
                       type="text"
-                      placeholder="Contoh: Insentif khusus target Q3, Senior Sales Executive, dll."
-                      value={newUserNotes}
-                      onChange={(e) => setNewUserNotes(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                      placeholder="Nama lengkap"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingUserRate(false)}
-                      className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-700 block mb-1">
+                      Peran
+                    </label>
+                    <select
+                      value={newUserRole}
+                      onChange={(e) => setNewUserRole(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs"
                     >
-                      Batal
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!newUserName.trim()}
-                      onClick={handleAddUserRate}
-                      className={`px-4 py-1.5 text-xs font-semibold text-white rounded-lg transition-colors cursor-pointer ${
-                        !newUserName.trim()
-                          ? 'bg-slate-300 cursor-not-allowed'
-                          : 'bg-teal-700 hover:bg-teal-800'
-                      }`}
-                    >
-                      Simpan Penyesuaian
-                    </button>
+                      <option value="Sales">Sales</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="AM">Account Manager (AM)</option>
+                      <option value="Staff">Staff</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-700 block mb-1">
+                      Fee (% Pool)
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={newUserPct}
+                        onChange={(e) => setNewUserPct(Number(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 font-mono font-bold border border-slate-300 rounded bg-white text-xs"
+                      />
+                      <span className="font-bold text-slate-500">%</span>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Tabel Daftar Override Personil */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                      <th className="py-2.5 px-4">Nama Personil</th>
-                      <th className="py-2.5 px-4">Peran</th>
-                      <th className="py-2.5 px-4">Fee Khusus (% dari Pool)</th>
-                      <th className="py-2.5 px-4">Efektif dari Margin</th>
-                      <th className="py-2.5 px-4">Catatan</th>
-                      <th className="py-2.5 px-4 text-center">Status</th>
-                      <th className="py-2.5 px-4 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {(!draft.userFeeRates || draft.userFeeRates.length === 0) ? (
-                      <tr>
-                        <td colSpan={7} className="py-6 text-center text-slate-400">
-                          Belum ada penyesuaian khusus personil. Seluruh user menggunakan rumus standar default ISP.
-                        </td>
-                      </tr>
-                    ) : (
-                      draft.userFeeRates.map((userRate, idx) => {
-                        const effectiveOfMargin = (
-                          (draft.marketingPoolPercentage * userRate.customFeePercentageOfPool) /
-                          100
-                        ).toFixed(1);
-
-                        return (
-                          <tr key={userRate.userId || idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-full bg-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center">
-                                  {userRate.userName.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <span className="font-bold text-slate-900 block">
-                                    {userRate.userName}
-                                  </span>
-                                  <span className="text-[10px] text-slate-400 font-mono">
-                                    {userRate.userId}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="py-3 px-4">
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                  userRate.userRole === 'Sales'
-                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                    : userRate.userRole === 'Marketing'
-                                    ? 'bg-teal-50 text-teal-700 border border-teal-200'
-                                    : 'bg-purple-50 text-purple-700 border border-purple-200'
-                                }`}
-                              >
-                                {userRate.userRole}
-                              </span>
-                            </td>
-
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1.5">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  step="1"
-                                  value={userRate.customFeePercentageOfPool}
-                                  onChange={(e) => {
-                                    const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                                    handleUpdateUserRate(idx, {
-                                      customFeePercentageOfPool: val,
-                                    });
-                                  }}
-                                  className="w-16 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded bg-white"
-                                />
-                                <span className="text-xs font-bold text-slate-600">%</span>
-                              </div>
-                            </td>
-
-                            <td className="py-3 px-4">
-                              <span className="font-mono font-bold text-teal-700">
-                                {effectiveOfMargin}%
-                              </span>
-                              <span className="text-[10px] text-slate-400 block">
-                                dari Gross Margin
-                              </span>
-                            </td>
-
-                            <td className="py-3 px-4">
-                              <input
-                                type="text"
-                                value={userRate.notes || ''}
-                                placeholder="Keterangan..."
-                                onChange={(e) =>
-                                  handleUpdateUserRate(idx, { notes: e.target.value })
-                                }
-                                className="w-full max-w-xs px-2 py-1 text-[11px] border border-transparent hover:border-slate-300 focus:border-teal-500 rounded bg-transparent focus:bg-white"
-                              />
-                            </td>
-
-                            <td className="py-3 px-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleUpdateUserRate(idx, { isActive: !userRate.isActive })
-                                }
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-colors cursor-pointer ${
-                                  userRate.isActive
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-slate-100 text-slate-500 border border-slate-200'
-                                }`}
-                              >
-                                {userRate.isActive ? 'Aktif' : 'Nonaktif'}
-                              </button>
-                            </td>
-
-                            <td className="py-3 px-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteUserRate(idx)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                title="Hapus penyesuaian khusus"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    placeholder="Catatan tambahan (opsional)"
+                    value={newUserNotes}
+                    onChange={(e) => setNewUserNotes(e.target.value)}
+                    className="flex-1 px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingUserRate(false)}
+                    className="px-3 py-1.5 font-medium text-slate-600 hover:text-slate-800 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!newUserName.trim()}
+                    onClick={handleAddUserRate}
+                    className={`px-3 py-1.5 font-semibold text-white rounded transition-colors cursor-pointer ${
+                      !newUserName.trim()
+                        ? 'bg-slate-300 cursor-not-allowed'
+                        : 'bg-teal-700 hover:bg-teal-800'
+                    }`}
+                  >
+                    Simpan
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* Clean Table */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-[11px]">
+                    <th className="py-2.5 px-3">Personil</th>
+                    <th className="py-2.5 px-3">Peran</th>
+                    <th className="py-2.5 px-3">Fee (% Pool)</th>
+                    <th className="py-2.5 px-3">Efektif Margin</th>
+                    <th className="py-2.5 px-3">Catatan</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
+                    <th className="py-2.5 px-3 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(!draft.userFeeRates || draft.userFeeRates.length === 0) ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center text-slate-400 text-xs">
+                        Belum ada personil khusus. Semua personil menggunakan rumus standar.
+                      </td>
+                    </tr>
+                  ) : (
+                    draft.userFeeRates.map((userRate, idx) => {
+                      const effectiveOfMargin = (
+                        (draft.marketingPoolPercentage * userRate.customPercentage) /
+                        100
+                      ).toFixed(1);
+
+                      return (
+                        <tr key={userRate.userId || idx} className="hover:bg-slate-50/50">
+                          <td className="py-2.5 px-3 font-semibold text-slate-900">
+                            {userRate.userName}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-600">
+                            {userRate.userRole}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={userRate.customPercentage}
+                                onChange={(e) => {
+                                  const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                                  handleUpdateUserRate(idx, { customPercentage: val });
+                                }}
+                                className="w-14 px-1.5 py-0.5 text-xs text-right font-mono font-semibold border border-slate-200 rounded bg-white"
+                              />
+                              <span className="text-slate-500">%</span>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-slate-700">
+                            {effectiveOfMargin}%
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-500">
+                            <input
+                              type="text"
+                              value={userRate.notes || ''}
+                              placeholder="Tambah catatan..."
+                              onChange={(e) => handleUpdateUserRate(idx, { notes: e.target.value })}
+                              className="w-full px-1.5 py-0.5 text-xs border border-transparent hover:border-slate-200 focus:border-slate-300 rounded bg-transparent focus:bg-white"
+                            />
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateUserRate(idx, { enabled: !userRate.enabled })}
+                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                                userRate.enabled
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-slate-100 text-slate-500 border border-slate-200'
+                              }`}
+                            >
+                              {userRate.enabled ? 'Aktif' : 'Nonaktif'}
+                            </button>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUserRate(idx)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
       {/* ===================================================================== */}
-      {/* TAB 2: RUMUS INTERNET & METRO ETHERNET                                 */}
+      {/* TAB 2: TARIF METRO & INTERNET                                         */}
       {/* ===================================================================== */}
       {activeTab === 'metro' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-b-xl rounded-t-none border border-t-0 border-slate-200 shadow-xs space-y-6">
-            {/* Metro Calculation Section */}
-            <div>
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <Network className="w-4 h-4 text-teal-700" />
-                <h3 className="text-sm font-bold text-slate-900">
-                  Rumus Perhitungan Biaya Metro Ethernet
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Tentukan bagaimana tarif interkoneksi Metro Ethernet dihitung terhadap bandwidth layanan yang dipilih pelanggan.
-              </p>
+          {/* Metro Methods */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Metode Perhitungan Metro Ethernet
+            </h2>
 
-              {/* Metro Methods */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-4">
-                {[
-                  {
-                    id: 'proportional_capacity' as MetroFormulaMethod,
-                    title: 'Proporsional Kapasitas Port',
-                    desc: '(Bandwidth / Kapasitas Port) × Harga Port Metro',
-                    tag: 'Standar Industri ISP',
-                  },
-                  {
-                    id: 'per_mbps' as MetroFormulaMethod,
-                    title: 'Per Mbps Eksak',
-                    desc: 'Bandwidth (Mbps) × Harga Metro per Mbps',
-                    tag: 'Linear',
-                  },
-                  {
-                    id: 'per_100mbps' as MetroFormulaMethod,
-                    title: 'Kelipatan Per 100 Mbps',
-                    desc: 'ceil(Bandwidth / 100) × Tarif Metro per 100M',
-                    tag: 'Blok 100M',
-                  },
-                  {
-                    id: 'per_gbps' as MetroFormulaMethod,
-                    title: 'Per Gbps',
-                    desc: '(Bandwidth / 1000) × Harga Metro per Gbps',
-                    tag: 'High Bandwidth',
-                  },
-                  {
-                    id: 'flat_port' as MetroFormulaMethod,
-                    title: 'Flat Rate per Port',
-                    desc: 'Tarif tetap flat berapapun bandwidth yang dialirkan',
-                    tag: 'Flat Bulanan',
-                  },
-                ].map((item) => {
-                  const isSelected = draft.metroCalculationMethod === item.id;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => updateDraft({ metroCalculationMethod: item.id })}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-1.5 ${
-                        isSelected
-                          ? 'bg-teal-50/60 border-teal-600 ring-2 ring-teal-600/20'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900">{item.title}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-100 text-slate-600">
-                          {item.tag}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 font-mono">{item.desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Metro Multiplier & Rounding */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-4 border-t border-slate-100">
-                <div className="space-y-1.5">
-                  <label htmlFor="metroMultiplierRatio" className="text-xs font-bold text-slate-800 block">
-                    Faktor Pengali Redundansi (Multiplier)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="metroMultiplierRatio"
-                      type="number"
-                      step="0.05"
-                      min="0.5"
-                      max="3.0"
-                      value={draft.metroMultiplierRatio}
-                      onChange={(e) => updateDraft({ metroMultiplierRatio: Number(e.target.value) || 1 })}
-                      className="w-24 px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg"
-                    />
-                    <span className="text-xs text-slate-500 font-mono">
-                      (1.0 = Normal, 1.25 = +25% Backup)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="metroRoundingRule" className="text-xs font-bold text-slate-800 block">
-                    Aturan Pembulatan Tarif Metro
-                  </label>
-                  <select
-                    id="metroRoundingRule"
-                    value={draft.metroRoundingRule}
-                    onChange={(e) => updateDraft({ metroRoundingRule: e.target.value as MetroRoundingRule })}
-                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                {
+                  id: 'proportional_capacity' as MetroFormulaMethod,
+                  title: 'Proporsional Kapasitas Port',
+                  desc: '(Bandwidth / Kapasitas Port) × Tarif Port',
+                  tag: 'Standar ISP',
+                },
+                {
+                  id: 'per_mbps' as MetroFormulaMethod,
+                  title: 'Per Mbps Eksak',
+                  desc: 'Bandwidth (Mbps) × Tarif per Mbps',
+                  tag: 'Linear',
+                },
+                {
+                  id: 'per_100mbps' as MetroFormulaMethod,
+                  title: 'Kelipatan Blok 100 Mbps',
+                  desc: 'ceil(Bandwidth / 100) × Tarif Blok 100M',
+                  tag: 'Blok 100M',
+                },
+                {
+                  id: 'per_gbps' as MetroFormulaMethod,
+                  title: 'Per Gbps',
+                  desc: '(Bandwidth / 1000) × Tarif per Gbps',
+                  tag: 'High Bandwidth',
+                },
+                {
+                  id: 'flat_port' as MetroFormulaMethod,
+                  title: 'Flat Rate per Port',
+                  desc: 'Tarif tetap flat berapapun bandwidth dialirkan',
+                  tag: 'Flat Bulanan',
+                },
+              ].map((item) => {
+                const isSelected = draft.metroCalculationMethod === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => updateDraft({ metroCalculationMethod: item.id })}
+                    className={`p-3 rounded-lg border transition-all cursor-pointer space-y-1 ${
+                      isSelected
+                        ? 'bg-teal-50/40 border-teal-600 ring-1 ring-teal-600'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
                   >
-                    <option value="none">Tanpa Pembulatan (Eksak Rupiah)</option>
-                    <option value="round_thousand">Bulatkan ke Ribuan Terdekat (Rp 1.000)</option>
-                    <option value="round_hundred_thousand">Bulatkan ke Ratusan Ribu (Rp 100.000)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="metroMinimumPrice" className="text-xs font-bold text-slate-800 block">
-                    Tarif Minimum Metro per Bulan (Rp)
-                  </label>
-                  <input
-                    id="metroMinimumPrice"
-                    type="number"
-                    min="0"
-                    step="50000"
-                    value={draft.metroMinimumPrice}
-                    onChange={(e) => updateDraft({ metroMinimumPrice: Number(e.target.value) || 0 })}
-                    placeholder="0 (Tanpa minimum)"
-                    className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg"
-                  />
-                </div>
-              </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900">{item.title}</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-slate-100 text-slate-600">
+                        {item.tag}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-mono">{item.desc}</p>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Internet Calculation Section */}
-            <div className="pt-6 border-t border-slate-100 space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <Cpu className="w-4 h-4 text-teal-700" />
-                <h3 className="text-sm font-bold text-slate-900">
-                  Rumus Perhitungan Internet Dedicated & Kebijakan Pajak
-                </h3>
+            {/* Metro Multiplier & Rounding */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-slate-100 text-xs">
+              <div className="space-y-1.5">
+                <label htmlFor="metroMultiplierRatio" className="font-semibold text-slate-800 block">
+                  Faktor Multiplier Redundansi
+                </label>
+                <input
+                  id="metroMultiplierRatio"
+                  type="number"
+                  step="0.05"
+                  min="0.5"
+                  max="3.0"
+                  value={draft.metroMultiplierRatio}
+                  onChange={(e) => updateDraft({ metroMultiplierRatio: Number(e.target.value) || 1 })}
+                  className="w-full px-3 py-1.5 font-mono border border-slate-300 rounded-lg bg-white"
+                />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="internetCalculationMethod" className="text-xs font-bold text-slate-800 block">
-                    Metode Perhitungan Internet
-                  </label>
-                  <select
-                    id="internetCalculationMethod"
-                    value={draft.internetCalculationMethod}
-                    onChange={(e) =>
-                      updateDraft({
-                        internetCalculationMethod: e.target.value as 'tier_priority_fallback' | 'pure_per_mbps',
-                      })
-                    }
-                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
-                  >
-                    <option value="tier_priority_fallback">Prioritaskan Tier Aktif + Fallback</option>
-                    <option value="pure_per_mbps">Linear Pure per Mbps</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label htmlFor="metroRoundingRule" className="font-semibold text-slate-800 block">
+                  Aturan Pembulatan Metro
+                </label>
+                <select
+                  id="metroRoundingRule"
+                  value={draft.metroRoundingRule}
+                  onChange={(e) => updateDraft({ metroRoundingRule: e.target.value as MetroRoundingRule })}
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg bg-white"
+                >
+                  <option value="none">Tanpa Pembulatan (Eksak)</option>
+                  <option value="round_thousand">Bulatkan ke Ribuan (Rp 1.000)</option>
+                  <option value="round_hundred_thousand">Bulatkan ke Ratusan Ribu (Rp 100.000)</option>
+                </select>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="internetFallbackPer100Mbps" className="text-xs font-bold text-slate-800 block">
-                    Tarif Fallback per 100 Mbps (Rp)
-                  </label>
+              <div className="space-y-1.5">
+                <label htmlFor="metroMinimumPrice" className="font-semibold text-slate-800 block">
+                  Tarif Minimum Metro / bln (Rp)
+                </label>
+                <input
+                  id="metroMinimumPrice"
+                  type="number"
+                  min="0"
+                  step="50000"
+                  value={draft.metroMinimumPrice}
+                  onChange={(e) => updateDraft({ metroMinimumPrice: Number(e.target.value) || 0 })}
+                  placeholder="0 (Tanpa minimum)"
+                  className="w-full px-3 py-1.5 font-mono border border-slate-300 rounded-lg bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Internet Dedicated & PPN */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Internet Dedicated & Kebijakan Pajak
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="space-y-1.5">
+                <label htmlFor="internetCalculationMethod" className="font-semibold text-slate-800 block">
+                  Metode Internet Dedicated
+                </label>
+                <select
+                  id="internetCalculationMethod"
+                  value={draft.internetCalculationMethod}
+                  onChange={(e) =>
+                    updateDraft({
+                      internetCalculationMethod: e.target.value as 'tier_priority_fallback' | 'pure_per_mbps',
+                    })
+                  }
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg bg-white"
+                >
+                  <option value="tier_priority_fallback">Prioritas Tier + Fallback</option>
+                  <option value="pure_per_mbps">Linear Pure per Mbps</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="internetFallbackPer100Mbps" className="font-semibold text-slate-800 block">
+                  Tarif Fallback / 100 Mbps (Rp)
+                </label>
+                <input
+                  id="internetFallbackPer100Mbps"
+                  type="number"
+                  step="100000"
+                  value={draft.internetFallbackPer100Mbps}
+                  onChange={(e) => updateDraft({ internetFallbackPer100Mbps: Number(e.target.value) || 0 })}
+                  className="w-full px-3 py-1.5 font-mono border border-slate-300 rounded-lg bg-white"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="ppnPercentage" className="font-semibold text-slate-800 block">
+                  Tarif PPN (%)
+                </label>
+                <div className="flex items-center gap-1">
                   <input
-                    id="internetFallbackPer100Mbps"
+                    id="ppnPercentage"
                     type="number"
-                    step="100000"
-                    value={draft.internetFallbackPer100Mbps}
-                    onChange={(e) => updateDraft({ internetFallbackPer100Mbps: Number(e.target.value) || 0 })}
-                    className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg"
+                    step="0.5"
+                    min="0"
+                    max="30"
+                    value={draft.ppnPercentage}
+                    onChange={(e) => updateDraft({ ppnPercentage: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-1.5 font-mono border border-slate-300 rounded-lg bg-white"
                   />
+                  <span className="font-bold text-slate-500">%</span>
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="ppnPercentage" className="text-xs font-bold text-slate-800 block">
-                    Tarif PPN Standar (%)
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <input
-                      id="ppnPercentage"
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max="30"
-                      value={draft.ppnPercentage}
-                      onChange={(e) => updateDraft({ ppnPercentage: Number(e.target.value) || 0 })}
-                      className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg"
-                    />
-                    <span className="text-xs font-bold text-slate-600">%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="maxDiscountPercentage" className="text-xs font-bold text-slate-800 block">
-                    Batas Maks Diskon Sales (%)
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <input
-                      id="maxDiscountPercentage"
-                      type="number"
-                      step="1"
-                      min="0"
-                      max="90"
-                      value={draft.maxDiscountPercentage}
-                      onChange={(e) => updateDraft({ maxDiscountPercentage: Number(e.target.value) || 0 })}
-                      className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg"
-                    />
-                    <span className="text-xs font-bold text-slate-600">%</span>
-                  </div>
+              <div className="space-y-1.5">
+                <label htmlFor="maxDiscountPercentage" className="font-semibold text-slate-800 block">
+                  Batas Maks Diskon Sales (%)
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    id="maxDiscountPercentage"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="90"
+                    value={draft.maxDiscountPercentage}
+                    onChange={(e) => updateDraft({ maxDiscountPercentage: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-1.5 font-mono border border-slate-300 rounded-lg bg-white"
+                  />
+                  <span className="font-bold text-slate-500">%</span>
                 </div>
               </div>
             </div>
@@ -1304,34 +1102,22 @@ export const FormulaSettingsView: React.FC = () => {
       )}
 
       {/* ===================================================================== */}
-      {/* TAB 3: SIMULATOR & LIVE PREVIEW                                       */}
+      {/* TAB 3: SIMULATOR LIVE                                                 */}
       {/* ===================================================================== */}
       {activeTab === 'simulator' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-b-xl rounded-t-none border border-t-0 border-slate-200 shadow-xs space-y-6">
-            <div>
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <Zap className="w-4 h-4 text-teal-700" />
-                <h3 className="text-sm font-bold text-slate-900">
-                  Simulator Live Hasil Hitungan Rumus
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Uji langsung dampak dari rumus draft yang Anda tentukan terhadap skenario pesanan pelanggan nyata secara instan.
-              </p>
-            </div>
-
-            {/* Simulator Inputs */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-5">
+            {/* Input Controls Grid */}
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
               <div>
-                <label htmlFor="simBandwidth" className="text-xs font-bold text-slate-700 block mb-1">
-                  Bandwidth Layanan
+                <label htmlFor="simBandwidth" className="font-semibold text-slate-700 block mb-1">
+                  Bandwidth
                 </label>
                 <select
                   id="simBandwidth"
                   value={simBandwidth}
                   onChange={(e) => setSimBandwidth(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white text-xs"
                 >
                   <option value={100}>100 Mbps</option>
                   <option value={200}>200 Mbps</option>
@@ -1343,26 +1129,26 @@ export const FormulaSettingsView: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="simMetroId" className="text-xs font-bold text-slate-700 block mb-1">
-                  Paket Metro Ethernet
+                <label htmlFor="simMetroId" className="font-semibold text-slate-700 block mb-1">
+                  Paket Metro
                 </label>
                 <select
                   id="simMetroId"
                   value={simMetroId}
                   onChange={(e) => setSimMetroId(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white text-xs"
                 >
                   {metro.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.name} ({m.priceMethod} - {formatRupiah(m.price)})
+                      {m.name} ({m.priceMethod})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="simDiscountPct" className="text-xs font-bold text-slate-700 block mb-1">
-                  Diskon Penjualan (%)
+                <label htmlFor="simDiscountPct" className="font-semibold text-slate-700 block mb-1">
+                  Diskon (%)
                 </label>
                 <input
                   id="simDiscountPct"
@@ -1371,13 +1157,13 @@ export const FormulaSettingsView: React.FC = () => {
                   max={draft.maxDiscountPercentage}
                   value={simDiscountPct}
                   onChange={(e) => setSimDiscountPct(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg bg-white"
+                  className="w-full px-2.5 py-1.5 font-mono border border-slate-300 rounded-lg bg-white text-xs"
                 />
               </div>
 
               <div>
-                <label htmlFor="simBottomRatio" className="text-xs font-bold text-slate-700 block mb-1">
-                  Rasio Harga Bottom (% DPP)
+                <label htmlFor="simBottomRatio" className="font-semibold text-slate-700 block mb-1">
+                  Bottom Price (% DPP)
                 </label>
                 <input
                   id="simBottomRatio"
@@ -1386,128 +1172,130 @@ export const FormulaSettingsView: React.FC = () => {
                   max="95"
                   value={simBottomRatio}
                   onChange={(e) => setSimBottomRatio(Number(e.target.value) || 75)}
-                  className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg bg-white"
+                  className="w-full px-2.5 py-1.5 font-mono border border-slate-300 rounded-lg bg-white text-xs"
                 />
               </div>
 
               <div>
-                <label htmlFor="simTargetUser" className="text-xs font-bold text-teal-800 block mb-1">
-                  Uji Personil Sales / Mkt
+                <label htmlFor="simTargetUser" className="font-semibold text-slate-700 block mb-1">
+                  Uji Personil
                 </label>
                 <select
                   id="simTargetUser"
                   value={simTargetUser}
                   onChange={(e) => setSimTargetUser(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs border border-teal-300 rounded-lg bg-teal-50/60 font-semibold text-teal-950"
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white text-xs"
                 >
-                  <option value="">-- Standar Global ISP --</option>
+                  <option value="">-- Standar ISP --</option>
                   {(draft.userFeeRates || []).map((u) => (
                     <option key={u.userId} value={u.userId}>
-                      {u.userName} ({u.userRole} - {u.customFeePercentageOfPool}%)
+                      {u.userName} ({u.customPercentage}%)
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Results Display */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Results Grid - Flattened Minimalist Hierarchy */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
               {/* Left: Pricing Breakdown */}
-              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center justify-between">
-                  <span>Hasil Kalkulasi Komponen Tarif</span>
-                  <span className="text-[10px] text-teal-700 font-mono font-semibold">
-                    Metode: {draft.metroCalculationMethod}
+              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Rincian Tarif Pelanggan
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {draft.metroCalculationMethod}
                   </span>
-                </h4>
+                </div>
 
                 <div className="divide-y divide-slate-100 text-xs">
-                  <div className="flex justify-between py-2">
-                    <span className="text-slate-600">Biaya Internet Dedicated:</span>
-                    <span className="font-mono font-bold text-slate-900">
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-slate-600">Internet Dedicated</span>
+                    <span className="font-mono font-medium text-slate-900">
                       {formatRupiah(simPricing.internetCost)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between py-2">
-                    <span className="text-slate-600">Biaya Metro Ethernet ({selectedSimMetro?.name}):</span>
-                    <span className="font-mono font-bold text-slate-900">
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-slate-600">Metro Ethernet ({selectedSimMetro?.name})</span>
+                    <span className="font-mono font-medium text-slate-900">
                       {formatRupiah(simPricing.metroCost)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between py-2">
-                    <span className="text-slate-600">Biaya Public IP:</span>
-                    <span className="font-mono font-bold text-slate-900">
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-slate-600">Public IP</span>
+                    <span className="font-mono font-medium text-slate-900">
                       {formatRupiah(simPricing.publicIpCost)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between py-2 font-semibold text-slate-800 bg-slate-50 px-2 rounded">
-                    <span>Subtotal Harga Dasar:</span>
-                    <span className="font-mono font-bold">
-                      {formatRupiah(simPricing.subtotal)}
-                    </span>
-                  </div>
+                  {simDiscountPct > 0 && (
+                    <div className="flex justify-between py-1.5 text-rose-600">
+                      <span>Diskon ({simDiscountPct}%)</span>
+                      <span className="font-mono font-medium">
+                        -{formatRupiah(simPricing.discountAmount)}
+                      </span>
+                    </div>
+                  )}
 
-                  <div className="flex justify-between py-2 text-rose-600">
-                    <span>Diskon ({simDiscountPct}%):</span>
-                    <span className="font-mono font-bold">
-                      -{formatRupiah(simPricing.discountAmount)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between py-2 font-bold text-teal-900 bg-teal-50/80 px-2 rounded">
-                    <span>Harga Jual Bersih (DPP):</span>
-                    <span className="font-mono text-sm">
+                  <div className="flex justify-between py-2 font-bold text-slate-900 bg-slate-50 px-2 rounded mt-1">
+                    <span>Harga Jual Bersih (DPP)</span>
+                    <span className="font-mono text-teal-800">
                       {formatRupiah(simPricing.dpp)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between py-2 text-slate-500">
-                    <span>PPN ({draft.ppnPercentage}%):</span>
+                  <div className="flex justify-between py-1.5 text-slate-500">
+                    <span>PPN ({draft.ppnPercentage}%)</span>
                     <span className="font-mono">
                       {formatRupiah(simPricing.ppnAmount)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between py-2.5 font-bold text-slate-950 text-sm">
-                    <span>Total Tagihan Pelanggan / bln:</span>
-                    <span className="font-mono text-teal-700">
+                  <div className="flex justify-between py-2.5 font-bold text-slate-900 border-t border-slate-200 mt-1">
+                    <span>Total Tagihan / bulan</span>
+                    <span className="font-mono text-sm text-teal-700">
                       {formatRupiah(simPricing.totalMonthly)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Right: Margin & Fee Allocation Breakdown */}
-              <div className="p-4 rounded-xl border border-teal-200 bg-teal-50/20 space-y-3">
-                <h4 className="text-xs font-bold text-teal-950 uppercase tracking-wide flex items-center justify-between">
-                  <span>Distribusi Margin & Fee Sales</span>
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    Zero-Drift Certified
+              {/* Right: Margin Allocation */}
+              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Distribusi Margin & Fee
+                  </h3>
+                  <span className="text-[10px] text-emerald-700 font-medium">
+                    Zero-Drift
                   </span>
-                </h4>
+                </div>
 
-                <div className="p-3 bg-white rounded-lg border border-teal-100 flex items-center justify-between">
+                {/* Gross Margin Row */}
+                <div className="p-3 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] text-slate-500 block">Gross Margin Bersih</span>
-                    <span className="text-base font-mono font-bold text-teal-900">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-semibold">
+                      Gross Margin Bersih
+                    </span>
+                    <span className="text-base font-mono font-bold text-slate-900">
                       {formatRupiah(simAllocation.margin)}
                     </span>
                   </div>
-                  <div className="text-right text-[11px] text-slate-400">
+                  <div className="text-right text-[11px] text-slate-500 font-mono">
                     <div>DPP: {formatRupiah(simSellingPrice)}</div>
                     <div>Bottom: {formatRupiah(simBottomPrice)}</div>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-xs">
+                <div className="divide-y divide-slate-100 text-xs">
                   {/* Kantor */}
-                  <div className="p-2.5 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-2">
                       <Building className="w-3.5 h-3.5 text-slate-600" />
-                      <span className="font-semibold text-slate-800">
+                      <span className="font-medium text-slate-800">
                         Kantor ISP ({simAllocation.kantor.percentage}%)
                       </span>
                     </div>
@@ -1517,59 +1305,57 @@ export const FormulaSettingsView: React.FC = () => {
                   </div>
 
                   {/* Marketing Pool */}
-                  <div className="p-2.5 bg-teal-50 rounded-lg border border-teal-200 flex items-center justify-between">
+                  <div className="flex items-center justify-between py-2 bg-slate-50/50 px-2 rounded">
                     <div className="flex items-center gap-2">
-                      <Users className="w-3.5 h-3.5 text-teal-700" />
-                      <span className="font-semibold text-teal-900">
+                      <Users className="w-3.5 h-3.5 text-slate-700" />
+                      <span className="font-semibold text-slate-800">
                         Pool Marketing ({simAllocation.marketingPool.percentage}%)
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-teal-900">
+                    <span className="font-mono font-bold text-slate-800">
                       {formatRupiah(simAllocation.marketingPool.amount)}
                     </span>
                   </div>
 
-                  {/* Sales Closing */}
-                  <div className="pl-6 pr-3 py-2 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
+                  {/* Sales */}
+                  <div className="flex items-center justify-between py-2 pl-4">
                     <div className="flex items-center gap-2">
-                      <Briefcase className="w-3.5 h-3.5 text-teal-600" />
+                      <Briefcase className="w-3.5 h-3.5 text-teal-700" />
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-slate-800 block text-xs">
-                            Sales Closing ({simAllocation.sales.percentage}% dari Pool)
+                          <span className="font-medium text-slate-800">
+                            Sales Closing ({simAllocation.sales.percentage}% Pool)
                           </span>
-                          {simAllocation.sales.isCustomRate && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] bg-teal-100 text-teal-800 font-bold uppercase">
-                              Rate Personil
+                          {isTargetUserCustom && (
+                            <span className="px-1 py-0.2 rounded text-[9px] bg-teal-50 text-teal-800 border border-teal-200 font-bold">
+                              Custom
                             </span>
                           )}
                         </div>
                         <span className="text-[10px] text-slate-400">
-                          Rasio Efektif:{' '}
-                          {((draft.marketingPoolPercentage * simAllocation.sales.percentage) / 100).toFixed(1)}% Margin
+                          {((draft.marketingPoolPercentage * simAllocation.sales.percentage) / 100).toFixed(1)}% Margin Kotor
                         </span>
                       </div>
                     </div>
-                    <span className="font-mono font-bold text-[#0F766E]">
+                    <span className="font-mono font-bold text-teal-700">
                       {formatRupiah(simAllocation.sales.amount)}
                     </span>
                   </div>
 
                   {/* AM */}
-                  <div className="pl-6 pr-3 py-2 bg-white rounded-lg border border-purple-200 flex items-center justify-between">
+                  <div className="flex items-center justify-between py-2 pl-4">
                     <div className="flex items-center gap-2">
-                      <UserCheck className="w-3.5 h-3.5 text-purple-600" />
+                      <UserCheck className="w-3.5 h-3.5 text-purple-700" />
                       <div>
-                        <span className="font-semibold text-purple-900 block text-xs">
-                          Account Manager ({simAllocation.am.percentage}% dari Pool)
+                        <span className="font-medium text-slate-800 block">
+                          Account Manager ({simAllocation.am.percentage}% Pool)
                         </span>
-                        <span className="text-[10px] text-purple-500">
-                          Rasio Efektif:{' '}
-                          {((draft.marketingPoolPercentage * simAllocation.am.percentage) / 100).toFixed(1)}% Margin
+                        <span className="text-[10px] text-slate-400">
+                          {((draft.marketingPoolPercentage * simAllocation.am.percentage) / 100).toFixed(1)}% Margin Kotor
                         </span>
                       </div>
                     </div>
-                    <span className="font-mono font-bold text-purple-800">
+                    <span className="font-mono font-bold text-purple-700">
                       {formatRupiah(simAllocation.am.amount)}
                     </span>
                   </div>
