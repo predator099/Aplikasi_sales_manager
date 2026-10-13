@@ -34,7 +34,10 @@ export const FormulaSettingsView: React.FC = () => {
     metro,
     publicIps,
     users,
+    currentUser,
   } = useApp();
+
+  const isSales = currentUser.role === 'Sales';
 
   // Local editable draft of formulaConfig
   const [draft, setDraft] = useState<CalculationFormulaConfig>(() => ({
@@ -246,6 +249,25 @@ export const FormulaSettingsView: React.FC = () => {
     simTargetUser &&
     draft.userFeeRates?.some((u) => u.enabled && (u.userId === simTargetUser || u.userName === simTargetUser))
   );
+
+  if (isSales) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 my-8 bg-white rounded-2xl border border-slate-200 shadow-xs text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <h2 className="text-base font-bold text-slate-900">
+          Akses Khusus Administrator / Manajemen
+        </h2>
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Formula pembagian fee perusahaan (<strong>Kantor 60%</strong>, <strong>Marketing Pool 40%</strong>, <strong>Sales 75% Pool / 30% Margin</strong>, <strong>AM 25% Pool / 10% Margin</strong>) dipatenkan secara resmi oleh perusahaan dan tidak dapat diubah oleh peran Sales.
+        </p>
+        <p className="text-xs text-teal-800 bg-teal-50 p-3 rounded-xl border border-teal-200">
+          Untuk menentukan <strong>Harga Jual</strong> dan melihat <strong>Komisi Sales</strong> Anda secara realtime, silakan buka menu <strong>Buat Layanan</strong>.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">

@@ -24,7 +24,12 @@ export const MasterPricingView: React.FC = () => {
     saveBandwidthTier,
     deleteBandwidthTier,
     toggleBandwidthTier,
+    currentUser,
   } = useApp();
+
+  // Role check: Sales and AM can only view (read-only), Admin and Accounting can manage
+  const isSalesOrAm = currentUser.role === 'Sales' || currentUser.role === 'AM';
+  const canManage = !isSalesOrAm;
 
   // Fallback & Tax Settings State
   const [fallbackPriceInput, setFallbackPriceInput] = useState(
@@ -152,19 +157,49 @@ export const MasterPricingView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Paket Internet
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Master Pricing — Harga Dasar & Bottom Internet
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+              Harga Dasar Perusahaan
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
+            Master Pricing adalah tempat perusahaan menentukan <strong>harga bottom (harga dasar resmi)</strong> untuk layanan internet bandwidth. Tarif di bawah ini menjadi acuan HPP otomatis saat Sales membuat layanan. Sales tidak menentukan harga jual di sini, melainkan langsung pada halaman <strong>Buat Layanan</strong>.
+          </p>
         </div>
 
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer self-start md:self-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Tambah Layanan Internet</span>
-        </button>
+        {canManage ? (
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer self-start md:self-auto"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Tambah Layanan Internet</span>
+          </button>
+        ) : (
+          <div className="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs font-medium flex items-center gap-1.5 self-start md:self-auto">
+            <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <span>Mode Lihat Saja (Hak Akses Sales)</span>
+          </div>
+        )}
       </div>
+
+      {/* Info Banner for Sales */}
+      {!canManage && (
+        <div className="p-4 bg-teal-50/70 border border-teal-200 rounded-xl text-xs text-teal-900 flex items-start gap-3">
+          <Info className="w-5 h-5 text-teal-700 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold">
+              Panduan Sales: Master Pricing Sebagai Acuan Harga Bottom
+            </p>
+            <p className="text-teal-800 leading-relaxed text-[11px]">
+              Daftar tarif internet di bawah ini merupakan <strong>Harga Bottom (HPP Resmi)</strong> perusahaan. Anda dapat melihat daftar tarif dan mencoba kalkulator simulasi realtime di bawah. Untuk menentukan <strong>Harga Jual</strong> dan mendapatkan perhitungan <strong>Margin & Komisi Sales (75% Pool / 30% Margin)</strong>, silakan buat penawaran langsung di menu <strong>Buat Layanan</strong>.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Section: Master Table of Bandwidth Tiers */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -190,13 +225,15 @@ export const MasterPricingView: React.FC = () => {
               />
             </div>
 
-            <button
-              onClick={handleOpenCreateModal}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Tambah</span>
-            </button>
+            {canManage && (
+              <button
+                onClick={handleOpenCreateModal}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -267,8 +304,11 @@ export const MasterPricingView: React.FC = () => {
                       <td className="py-3 px-4 text-center">
                         <button
                           type="button"
-                          onClick={() => toggleBandwidthTier(tier.id)}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${
+                          disabled={!canManage}
+                          onClick={() => canManage && toggleBandwidthTier(tier.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                            canManage ? 'cursor-pointer' : 'cursor-default'
+                          } ${
                             tier.isActive
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-slate-100 text-slate-600 border border-slate-200'
@@ -285,28 +325,32 @@ export const MasterPricingView: React.FC = () => {
 
                       {/* Aksi */}
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(tier)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-                            title="Edit Tarif Kapasitas"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Hapus tarif paket ${tier.name}?`)) {
-                                deleteBandwidthTier(tier.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="Hapus Tarif"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {canManage ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(tier)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                              title="Edit Tarif Kapasitas"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Hapus tarif paket ${tier.name}?`)) {
+                                  deleteBandwidthTier(tier.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Hapus Tarif"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-mono">Terkunci</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -498,9 +542,10 @@ export const MasterPricingView: React.FC = () => {
                   </span>
                   <input
                     type="text"
+                    disabled={!canManage}
                     value={fallbackPriceInput}
                     onChange={(e) => setFallbackPriceInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                    className="w-full pl-10 pr-4 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-100 disabled:text-slate-500"
                   />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -515,12 +560,13 @@ export const MasterPricingView: React.FC = () => {
                 <div className="relative">
                   <input
                     type="number"
+                    disabled={!canManage}
                     min="0"
                     max="100"
                     step="0.5"
                     value={ppnInput}
                     onChange={(e) => setPpnInput(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20"
+                    className="w-full px-3 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-100 disabled:text-slate-500"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
                     %
@@ -542,13 +588,19 @@ export const MasterPricingView: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0F766E] hover:bg-teal-800 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                <span>Simpan Pengaturan Dasar</span>
-              </button>
+              {canManage ? (
+                <button
+                  type="submit"
+                  className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0F766E] hover:bg-teal-800 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Pengaturan Dasar</span>
+                </button>
+              ) : (
+                <div className="p-2.5 bg-slate-100 rounded-xl text-center text-[11px] text-slate-500 font-medium">
+                  Pengaturan ini dikunci (hanya Administrator/Accounting).
+                </div>
+              )}
             </form>
           </div>
         </div>

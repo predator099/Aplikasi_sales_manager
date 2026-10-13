@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Quotation } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { QuotationStatusBadge } from '../common/Badge';
@@ -14,6 +14,8 @@ import {
   Download,
   Calendar,
   ShieldCheck,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface QuotationPreviewModalProps {
@@ -30,12 +32,22 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
   onStatusChange,
 }) => {
   const { customers, metro, publicIps, currentUser } = useApp();
+  const [showInternalMargin, setShowInternalMargin] = useState(false);
 
   if (!quotation) return null;
 
   const customer = customers.find((c) => c.id === quotation.customerId);
   const metroObj = metro.find((m) => m.id === quotation.metroId);
   const ipObj = publicIps.find((p) => p.id === quotation.publicIpId);
+
+  // Perhitungan item penawaran ke pelanggan:
+  // Harga penawaran ke customer berbasis sellingPrice/subtotal (tidak membocorkan bottom price internet)
+  const clientInternetOffer = useMemo(() => {
+    const effectiveSubtotal = quotation.sellingPrice || quotation.subtotal;
+    const metroPortion = quotation.metroCost || 0;
+    const ipPortion = quotation.publicIpCost || 0;
+    return Math.max(0, effectiveSubtotal - metroPortion - ipPortion);
+  }, [quotation]);
 
   const handlePrint = () => {
     window.print();
@@ -167,7 +179,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                       {formatBandwidth(quotation.bandwidthMbps)}
                     </td>
                     <td className="py-3 px-4 text-right font-semibold text-slate-800">
-                      {formatRupiah(quotation.internetCost)}
+                      {formatRupiah(clientInternetOffer)}
                     </td>
                   </tr>
 
@@ -179,10 +191,13 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-slate-700">
-                      {metroObj?.name || 'Metro Link'} ({metroObj?.priceMethod})
+                      <span className="font-medium block">{metroObj?.name || 'Metro Link'}</span>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        Kapasitas: {quotation.metroCapacityMbps ? `${quotation.metroCapacityMbps} Mbps` : `${quotation.bandwidthMbps} Mbps`}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-right font-semibold text-slate-800">
-                      {formatRupiah(quotation.metroCost)}
+                      {quotation.metroCost > 0 ? formatRupiah(quotation.metroCost) : 'Termasuk Paket'}
                     </td>
                   </tr>
 
@@ -197,7 +212,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                       Prefix {ipObj?.prefix || 'Tanpa IP'}
                     </td>
                     <td className="py-3 px-4 text-right font-semibold text-slate-800">
-                      {formatRupiah(quotation.publicIpCost)}
+                      {quotation.publicIpCost > 0 ? formatRupiah(quotation.publicIpCost) : 'Termasuk Paket'}
                     </td>
                   </tr>
                 </tbody>
@@ -220,8 +235,8 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
 
             <div className="w-full sm:w-72 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal Layanan:</span>
-                <span className="font-medium text-slate-800">{formatRupiah(quotation.subtotal)}</span>
+                <span>Harga Penawaran Layanan (Subtotal):</span>
+                <span className="font-bold text-slate-900">{formatRupiah(quotation.subtotal)}</span>
               </div>
 
               {quotation.discountAmount > 0 && (
@@ -248,43 +263,63 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Internal Margin & Fee Allocation Breakdown (Internal Reference, Hidden for Sales & Print) */}
+          {/* Internal Margin & Fee Allocation Breakdown (Strictly Internal Reference, Never Printed or Shown on Customer Quote) */}
           {quotation.pricingAllocation && currentUser.role !== 'Sales' && (
-            <div className="mt-8 p-4 bg-slate-900 text-white rounded-xl border border-slate-800 text-xs space-y-3 print:hidden">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px]">
-                  Rincian Alokasi Margin Internal ISP (Formula Paten)
+            <div className="mt-8 pt-4 border-t border-dashed border-slate-300 print:hidden">
+              <button
+                type="button"
+                onClick={() => setShowInternalMargin(!showInternalMargin)}
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 rounded-xl text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-teal-700" />
+                  Audit Margin & Fee Internal Perusahaan (Khusus Internal - Tidak Tercetak)
                 </span>
-                <span className="text-emerald-400 font-bold font-mono">
-                  Margin: {formatRupiah(quotation.pricingAllocation.margin)}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                <div className="p-2 bg-slate-800 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Kantor (ISP)</span>
-                  <span className="font-bold font-mono text-white">{formatRupiah(quotation.pricingAllocation.kantor.amount)}</span>
-                  <span className="text-[10px] text-teal-400 block">60% dari Margin</span>
+                {showInternalMargin ? (
+                  <ChevronUp className="w-4 h-4 text-slate-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                )}
+              </button>
+
+              {showInternalMargin && (
+                <div className="mt-3 p-4 bg-slate-900 text-white rounded-xl border border-slate-800 text-xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px]">
+                      Rincian Alokasi Margin Internal ISP (Formula Paten)
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      Margin: {formatRupiah(quotation.pricingAllocation.margin)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                    <div className="p-2 bg-slate-800 rounded-lg">
+                      <span className="text-slate-400 block text-[10px]">Kantor (ISP)</span>
+                      <span className="font-bold font-mono text-white">{formatRupiah(quotation.pricingAllocation.kantor.amount)}</span>
+                      <span className="text-[10px] text-teal-400 block">60% dari Margin</span>
+                    </div>
+                    <div className="p-2 bg-teal-950 rounded-lg border border-teal-800">
+                      <span className="text-teal-300 block text-[10px]">Pool Marketing</span>
+                      <span className="font-bold font-mono text-teal-300">{formatRupiah(quotation.pricingAllocation.marketingPool.amount)}</span>
+                      <span className="text-[10px] text-teal-400 block">40% dari Margin</span>
+                    </div>
+                    <div className="p-2 bg-slate-800 rounded-lg">
+                      <span className="text-amber-300 block text-[10px]">Sales</span>
+                      <span className="font-bold font-mono text-amber-300">{formatRupiah(quotation.pricingAllocation.sales.amount)}</span>
+                      <span className="text-[10px] text-slate-400 block">75% Pool (30% Margin)</span>
+                    </div>
+                    <div className="p-2 bg-slate-800 rounded-lg">
+                      <span className="text-purple-300 block text-[10px]">AM</span>
+                      <span className="font-bold font-mono text-purple-300">{formatRupiah(quotation.pricingAllocation.am.amount)}</span>
+                      <span className="text-[10px] text-slate-400 block">25% Pool (10% Margin)</span>
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800 flex justify-between">
+                    <span>Formula Fixed: Kantor 60% • Pool Marketing 40% (Sales 75% : AM 25%)</span>
+                    <span className="text-emerald-400 font-mono">Valid: 100% Margin Teralokasi</span>
+                  </div>
                 </div>
-                <div className="p-2 bg-teal-950 rounded-lg border border-teal-800">
-                  <span className="text-teal-300 block text-[10px]">Pool Marketing</span>
-                  <span className="font-bold font-mono text-teal-300">{formatRupiah(quotation.pricingAllocation.marketingPool.amount)}</span>
-                  <span className="text-[10px] text-teal-400 block">40% dari Margin</span>
-                </div>
-                <div className="p-2 bg-slate-800 rounded-lg">
-                  <span className="text-amber-300 block text-[10px]">Sales</span>
-                  <span className="font-bold font-mono text-amber-300">{formatRupiah(quotation.pricingAllocation.sales.amount)}</span>
-                  <span className="text-[10px] text-slate-400 block">75% Pool (30% Margin)</span>
-                </div>
-                <div className="p-2 bg-slate-800 rounded-lg">
-                  <span className="text-purple-300 block text-[10px]">AM</span>
-                  <span className="font-bold font-mono text-purple-300">{formatRupiah(quotation.pricingAllocation.am.amount)}</span>
-                  <span className="text-[10px] text-slate-400 block">25% Pool (10% Margin)</span>
-                </div>
-              </div>
-              <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800 flex justify-between">
-                <span>Formula Fixed: Kantor 60% • Pool Marketing 40% (Sales 75% : AM 25%)</span>
-                <span className="text-emerald-400 font-mono">Valid: 100% Margin Teralokasi</span>
-              </div>
+              )}
             </div>
           )}
 

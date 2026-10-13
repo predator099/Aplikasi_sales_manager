@@ -302,25 +302,36 @@ export const INITIAL_CUSTOMERS: Customer[] = [
 
 export const INITIAL_METRO: Metro[] = [
   {
-    id: 'MTR-001',
-    name: 'Metro Provider Alpha',
-    priceMethod: 'Per Mbps',
-    price: 15000,
+    id: 'MTR-000',
+    name: 'Tanpa Metro (Direct / On-Net)',
+    priceMethod: 'Per 100 Mbps',
+    price: 0,
     status: 'Aktif',
+    notes: 'Koneksi langsung tanpa lastmile metro pihak ketiga (Biaya Metro Rp 0)',
+  },
+  {
+    id: 'MTR-001',
+    name: 'Metro Provider Alpha (Per 100 Mbps)',
+    priceMethod: 'Per 100 Mbps',
+    price: 1000000,
+    status: 'Aktif',
+    notes: 'Tarif dasar Rp 1.000.000 per 100 Mbps kapasitas',
   },
   {
     id: 'MTR-002',
-    name: 'Metro Provider Beta',
+    name: 'Metro Provider Beta (Per Gbps)',
     priceMethod: 'Per Gbps',
     price: 8000000,
     status: 'Aktif',
+    notes: 'Tarif backbone Rp 8.000.000 per 1 Gbps (1.000 Mbps)',
   },
   {
     id: 'MTR-003',
-    name: 'Metro Provider Gamma',
+    name: 'Metro Provider Gamma (Per Mbps)',
     priceMethod: 'Per Mbps',
-    price: 25000,
+    price: 15000,
     status: 'Aktif',
+    notes: 'Tarif linier Rp 15.000 per Mbps kapasitas',
   },
 ];
 

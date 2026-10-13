@@ -6,7 +6,10 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { Globe2, Plus, Pencil, Trash2, X, Server, CheckCircle2 } from 'lucide-react';
 
 export const MasterPublicIpView: React.FC = () => {
-  const { publicIps, addPublicIp, updatePublicIp, deletePublicIp } = useApp();
+  const { publicIps, addPublicIp, updatePublicIp, deletePublicIp, currentUser } = useApp();
+
+  const isSalesOrAm = currentUser.role === 'Sales' || currentUser.role === 'AM';
+  const canManage = !isSalesOrAm;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [ipToEdit, setIpToEdit] = useState<PublicIp | null>(null);
@@ -95,18 +98,32 @@ export const MasterPublicIpView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            IP Publik
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Master Public IP Address
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+              Komponen Harga Bottom
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 max-w-3xl">
+            Katalog subnetting IP Publik resmi ISP. Komponen ini dihitung otomatis menjadi bagian dari Harga Bottom saat Sales memilih blok IP pada halaman Buat Layanan.
+          </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Tambah Prefix IP</span>
-        </button>
+        {canManage ? (
+          <button
+            onClick={openAddModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Tambah Prefix IP</span>
+          </button>
+        ) : (
+          <div className="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs font-medium flex items-center gap-1.5 self-start sm:self-auto">
+            <span>Mode Lihat Saja (Hak Akses Sales)</span>
+          </div>
+        )}
       </div>
 
       {/* Table Section */}
@@ -154,22 +171,26 @@ export const MasterPublicIpView: React.FC = () => {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openEditModal(ip)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                        title="Edit Prefix"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setIpToDelete(ip)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                        title="Hapus Prefix"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    {canManage ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEditModal(ip)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                          title="Edit Prefix"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setIpToDelete(ip)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                          title="Hapus Prefix"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-mono">Terkunci</span>
+                    )}
                   </td>
                 </tr>
               ))}

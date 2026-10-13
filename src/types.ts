@@ -159,6 +159,7 @@ export interface ServiceItem {
   customerId: string;
   bandwidthMbps: number;
   metroId: string;
+  metroCapacityMbps?: number; // Kapasitas Metro manual dalam Mbps
   publicIpId: string;
   discountType: 'nominal' | 'percentage';
   discountValue: number;
@@ -167,6 +168,9 @@ export interface ServiceItem {
   metroCost: number;
   publicIpCost: number;
   subtotal: number;
+  bottomPrice?: number; // Harga Bottom otomatis dari Master Pricing
+  sellingPrice?: number; // Harga Jual yang diisi oleh Sales
+  margin?: number; // Margin = sellingPrice - bottomPrice
   discountAmount: number;
   dpp: number;
   ppnAmount: number;
@@ -185,11 +189,15 @@ export interface Quotation {
   serviceId?: string;
   bandwidthMbps: number;
   metroId: string;
+  metroCapacityMbps?: number; // Kapasitas Metro manual dalam Mbps
   publicIpId: string;
   internetCost: number;
   metroCost: number;
   publicIpCost: number;
   subtotal: number;
+  bottomPrice?: number; // Harga Bottom untuk kalkulasi internal
+  sellingPrice?: number; // Harga Jual penawaran kepada customer
+  margin?: number; // Margin internal
   discountType: 'nominal' | 'percentage';
   discountValue: number;
   discountAmount: number;

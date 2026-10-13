@@ -8,15 +8,20 @@ import {
 
 export interface PricingCalculationResult {
   bandwidthMbps: number;
+  metroCapacityMbps: number;
   internetCost: number;
   metroCost: number;
   publicIpCost: number;
-  subtotal: number;
+  bottomPrice: number; // Harga Bottom resmi dari Master Pricing
+  subtotal: number; // Subtotal dasar komponen biaya
+  sellingPrice: number; // Harga Jual yang ditawarkan oleh Sales
+  margin: number; // Margin = sellingPrice - bottomPrice
+  marginPercentage: number; // (Margin / bottomPrice) * 100
   discountAmount: number;
-  dpp: number;
+  dpp: number; // Dasar Pengenaan Pajak (sellingPrice - discountAmount)
   ppnPercentage: number;
   ppnAmount: number;
-  totalMonthly: number;
+  totalMonthly: number; // DPP + PPN
   tierUsed?: BandwidthTier | null;
   isCustomTier?: boolean;
 }
@@ -66,57 +71,62 @@ export function calculatePricing(params: {
   bandwidthMbps: number;
   pricingConfig: PricingConfig;
   metro?: Metro | null;
+  metroCapacityMbps?: number; // Kapasitas Metro manual dalam Mbps
   publicIp?: PublicIp | null;
   discountType: 'nominal' | 'percentage';
   discountValue: number;
   formula?: CalculationFormulaConfig | null;
+  sellingPrice?: number; // Harga Jual yang diisi oleh Sales
 }): PricingCalculationResult {
-  const { bandwidthMbps, pricingConfig, metro, publicIp, discountType, discountValue, formula } = params;
+  const {
+    bandwidthMbps,
+    pricingConfig,
+    metro,
+    metroCapacityMbps,
+    publicIp,
+    discountType,
+    discountValue,
+    formula,
+    sellingPrice,
+  } = params;
 
   // 1. Internet cost from custom tier or baseline
   const internetRate = getInternetCost(bandwidthMbps, pricingConfig, formula);
   const internetCost = internetRate.cost;
 
-  // 2. Metro cost with configurable formula
+  // 2. Metro cost calculated based on manual metro capacity (defaulting to bandwidthMbps)
+  const effMetroCapacity = typeof metroCapacityMbps === 'number' && !isNaN(metroCapacityMbps) && metroCapacityMbps >= 0
+    ? metroCapacityMbps
+    : bandwidthMbps;
+
   let metroCost = 0;
-  if (metro && metro.status === 'Aktif') {
-    const method = formula?.metroCalculationMethod || 'proportional_capacity';
+  if (metro && metro.status === 'Aktif' && metro.price > 0 && effMetroCapacity > 0) {
+    const method = formula?.metroCalculationMethod;
 
     if (method === 'flat_port') {
       metroCost = metro.price;
-    } else if (method === 'per_mbps') {
-      metroCost = bandwidthMbps * metro.price;
-    } else if (method === 'per_gbps') {
-      metroCost = (bandwidthMbps / 1000) * metro.price;
-    } else if (method === 'per_100mbps') {
-      metroCost = (bandwidthMbps / 100) * metro.price;
+    } else if (metro.priceMethod === 'Per Gbps' || method === 'per_gbps') {
+      metroCost = Math.round((effMetroCapacity / 1000) * metro.price);
+    } else if (metro.priceMethod === 'Per 100 Mbps' || method === 'per_100mbps') {
+      metroCost = Math.round((effMetroCapacity / 100) * metro.price);
+    } else if (metro.priceMethod === 'Per Mbps' || method === 'per_mbps') {
+      metroCost = Math.round(effMetroCapacity * metro.price);
     } else {
-      // proportional_capacity
-      if (metro.bandwidthMbps && metro.bandwidthMbps === bandwidthMbps) {
-        metroCost = metro.price;
-      } else if (metro.bandwidthMbps && metro.bandwidthMbps > 0) {
-        metroCost = Math.round((bandwidthMbps / metro.bandwidthMbps) * metro.price);
-      } else if (metro.priceMethod === 'Per Gbps' || (metro.priceMethod as string) === 'Per GB') {
-        metroCost = (bandwidthMbps / 1000) * metro.price;
-      } else if (metro.priceMethod === 'Per Mbps') {
-        metroCost = bandwidthMbps * metro.price;
-      } else {
-        // Fallback: Per 100 Mbps
-        metroCost = (bandwidthMbps / 100) * metro.price;
-      }
+      // Default: Per 100 Mbps
+      metroCost = Math.round((effMetroCapacity / 100) * metro.price);
     }
 
-    // Apply multiplier ratio if configured (e.g. 1.0 or 1.25)
+    // Multiplier ratio if configured
     if (formula?.metroMultiplierRatio && formula.metroMultiplierRatio > 0) {
       metroCost = Math.round(metroCost * formula.metroMultiplierRatio);
     }
 
-    // Apply minimum charge if configured
+    // Minimum price rule
     if (formula?.metroMinimumPrice && formula.metroMinimumPrice > 0) {
       metroCost = Math.max(metroCost, formula.metroMinimumPrice);
     }
 
-    // Apply rounding rule
+    // Rounding rule
     if (formula?.metroRoundingRule === 'round_thousand') {
       metroCost = Math.round(metroCost / 1000) * 1000;
     } else if (formula?.metroRoundingRule === 'round_hundred_thousand') {
@@ -130,40 +140,57 @@ export function calculatePricing(params: {
     publicIpCost = publicIp.price;
   }
 
-  // 4. Subtotal
-  const subtotal = internetCost + metroCost + publicIpCost;
+  // 4. Harga Bottom = Internet + Metro + Public IP (Read-Only)
+  const bottomPrice = internetCost + metroCost + publicIpCost;
+  const subtotal = bottomPrice;
 
-  // 5. Discount (constrained by maxDiscountPercentage if in percentage mode)
+  // 5. Harga Jual yang diisi oleh Sales (jika belum diisi atau 0, default sama dengan bottomPrice)
+  const resolvedSellingPrice = typeof sellingPrice === 'number' && !isNaN(sellingPrice)
+    ? Math.max(0, sellingPrice)
+    : bottomPrice;
+
+  // 6. Margin = Harga Jual - Harga Bottom
+  const margin = resolvedSellingPrice - bottomPrice;
+  const marginPercentage = bottomPrice > 0 ? (margin / bottomPrice) * 100 : 0;
+
+  // 7. Diskon Penjualan terhadap Harga Jual
   let discountAmount = 0;
   const maxAllowedPct = formula?.maxDiscountPercentage ?? 50;
   if (discountType === 'percentage') {
     const pct = Math.min(maxAllowedPct, Math.max(0, Number(discountValue) || 0));
-    discountAmount = (subtotal * pct) / 100;
+    discountAmount = Math.round((resolvedSellingPrice * pct) / 100);
   } else {
-    discountAmount = Math.min(subtotal, Math.max(0, Number(discountValue) || 0));
+    discountAmount = Math.min(resolvedSellingPrice, Math.max(0, Number(discountValue) || 0));
   }
 
-  // 6. DPP
-  const dpp = Math.max(0, subtotal - discountAmount);
+  // 8. DPP (Dasar Pengenaan Pajak)
+  const dpp = Math.max(0, resolvedSellingPrice - discountAmount);
 
-  // 7. PPN
+  // 9. PPN
   const ppnPercentage = formula?.ppnPercentage ?? pricingConfig?.ppnPercentage ?? 11;
   const ppnAmount = Math.round(dpp * (ppnPercentage / 100));
 
-  // 8. Total per month
+  // 10. Total Tagihan Bulanan (DPP + PPN)
   const totalMonthly = dpp + ppnAmount;
 
   return {
     bandwidthMbps,
+    metroCapacityMbps: effMetroCapacity,
     internetCost,
     metroCost,
     publicIpCost,
+    bottomPrice,
     subtotal,
+    sellingPrice: resolvedSellingPrice,
+    margin,
+    marginPercentage,
     discountAmount,
     dpp,
     ppnPercentage,
     ppnAmount,
     totalMonthly,
+    tierUsed: internetRate.tierUsed,
+    isCustomTier: internetRate.isCustomTier,
   };
 }
 
